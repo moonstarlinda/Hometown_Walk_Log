@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { ArrowRight, Compass, MapPin } from 'lucide-react';
+import { ArrowRight, MapPin } from 'lucide-react';
 import { Base } from '../types';
 
 interface WalkMapProps {
@@ -46,20 +46,10 @@ export default function WalkMap({
 
   return (
     <section className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-3 shadow-sm shadow-emerald-950/5">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="flex items-center gap-2 font-serif text-lg font-semibold text-[#243C32]">
-            <Compass className="h-4 w-4 text-[#5F7D58]" />
-            散步路线
-          </h2>
-          <p className="mt-1 text-xs text-[#6B7E65]">一个粗略的位置关系图。</p>
-        </div>
-      </div>
-
       <div className="relative overflow-x-auto">
         <svg
           viewBox="0 0 820 360"
-          className="h-[220px] min-w-[640px] rounded-lg border border-[#E4E8D7] bg-[#F8F7EF]"
+          className="block h-[230px] w-full rounded-lg border border-[#E4E8D7] bg-[#F8F7EF] sm:h-[290px] lg:h-[340px]"
           preserveAspectRatio="xMidYMid meet"
         >
           <defs>
@@ -94,10 +84,10 @@ export default function WalkMap({
             strokeWidth="2"
           />
 
-          <text x="95" y="65" className="fill-[#6F8A73] text-[11px]">
+          <text x="95" y="65" className="fill-[#6F8A73] text-sm">
             河流
           </text>
-          <text x="255" y="330" className="fill-[#6F8A73] text-[11px]">
+          <text x="255" y="330" className="fill-[#6F8A73] text-sm">
             常走路线
           </text>
 
@@ -105,7 +95,7 @@ export default function WalkMap({
             const pos = getPosition(base.id, index);
             const active = selectedBaseId === base.id;
             const hovered = hoveredBaseId === base.id;
-            const name = base.title.split(' · ')[1] || base.title.split(' 路 ')[1] || base.title;
+            const name = base.title.split(' 路 ')[1] || base.title;
 
             return (
               <g
@@ -118,17 +108,17 @@ export default function WalkMap({
                 <circle
                   cx={pos.x}
                   cy={pos.y}
-                  r={active || hovered ? 17 : 14}
+                  r={active || hovered ? 21 : 17}
                   fill={active ? '#2F5D4A' : '#FFFDF7'}
                   stroke={active ? '#2F5D4A' : '#7FA06E'}
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                   className="transition-all"
                 />
                 <text
                   x={pos.x}
-                  y={pos.y + 4}
+                  y={pos.y + 5}
                   textAnchor="middle"
-                  className={`pointer-events-none text-[11px] font-semibold ${
+                  className={`pointer-events-none text-sm font-semibold ${
                     active ? 'fill-[#FFFDF4]' : 'fill-[#3F5F43]'
                   }`}
                 >
@@ -136,9 +126,9 @@ export default function WalkMap({
                 </text>
                 <text
                   x={pos.x}
-                  y={pos.y - 24}
+                  y={pos.y - 28}
                   textAnchor="middle"
-                  className="pointer-events-none fill-[#4D6B50] text-[11px]"
+                  className="pointer-events-none fill-[#4D6B50] text-sm"
                 >
                   {name}
                 </text>
@@ -157,7 +147,7 @@ export default function WalkMap({
               {latestLogPerBase[hoveredBase.id] || hoveredBase.location}
             </p>
             <span className="mt-2 inline-flex items-center gap-1 text-xs text-[#5F7D58]">
-              点开查看 <ArrowRight className="h-3 w-3" />
+              点击查看 <ArrowRight className="h-3 w-3" />
             </span>
           </div>
         )}

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   BarChart3,
@@ -16,6 +16,8 @@ import {
   Filter,
   Map,
   MapPin,
+  MoreHorizontal,
+  Pencil,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -45,8 +47,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'bases' | 'timeline' | 'stats'>('bases');
   const [showAddLog, setShowAddLog] = useState(false);
   const [showAddBase, setShowAddBase] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterDate, setFilterDate] = useState('');
   const [filterBaseId, setFilterBaseId] = useState('all');
   const [filterWeather, setFilterWeather] = useState('all');
 
@@ -112,11 +116,6 @@ export default function App() {
     return sortedLogs.filter((log) => log.baseId === selectedBaseId);
   }, [selectedBaseId, sortedLogs]);
 
-  const latestLog = sortedLogs[0] ?? null;
-  const latestBase = latestLog
-    ? bases.find((base) => base.id === latestLog.baseId) ?? null
-    : null;
-
   const latestLogPerBase = useMemo(() => {
     const latest: Record<string, string | null> = {};
     bases.forEach((base) => {
@@ -137,11 +136,12 @@ export default function App() {
         log.tags.some((tag) => tag.toLowerCase().includes(query));
 
       const matchesBase = filterBaseId === 'all' || log.baseId === filterBaseId;
+      const matchesDate = !filterDate || log.date === filterDate;
       const matchesWeather = filterWeather === 'all' || log.weather === filterWeather;
 
-      return matchesSearch && matchesBase && matchesWeather;
+      return matchesSearch && matchesBase && matchesDate && matchesWeather;
     });
-  }, [filterBaseId, filterWeather, searchQuery, sortedLogs]);
+  }, [filterBaseId, filterDate, filterWeather, searchQuery, sortedLogs]);
 
   const handleAddLog = (newLogData: Omit<WalkLog, 'id'>) => {
     const newLog: WalkLog = {
@@ -245,10 +245,10 @@ export default function App() {
               </span>
               <span className="min-w-0">
                 <span className="block truncate font-serif text-lg font-semibold text-[#243C32]">
-                  散步笔记
+                  乡野漫步 
                 </span>
                 <span className="block truncate text-xs text-[#6B7E65]">
-                  家附近的路、天气和慢慢变化的景物
+                  漫步于家乡的山水间，发现并记录“秘密基地”的点滴变化
                 </span>
               </span>
             </button>
@@ -261,22 +261,6 @@ export default function App() {
               >
                 <RefreshCw className="h-4 w-4" />
                 重播开场
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddLog(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#2F5D4A] px-3 py-2 text-xs font-medium text-[#FFFDF4] shadow-sm transition-colors hover:bg-[#254938]"
-              >
-                <Plus className="h-4 w-4" />
-                记录
-              </button>
-              <button
-                type="button"
-                onClick={handleResetData}
-                title="恢复默认数据"
-                className="rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] p-2 text-[#6B7E65] transition-colors hover:bg-[#F1F5EA] hover:text-[#2F5D4A]"
-              >
-                <RotateCcw className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -313,6 +297,16 @@ export default function App() {
         </div>
       </header>
 
+      {false && (
+        <AuthorTools
+          isEditing={isEditing}
+          onAddLog={() => setShowAddLog(true)}
+          onAddBase={() => setShowAddBase(true)}
+          onToggleEditing={() => setIsEditing((current) => !current)}
+          onResetData={handleResetData}
+        />
+      )}
+
       <AnimatePresence>
         {showIntro && showHome && (
           <OpeningIntro
@@ -325,17 +319,10 @@ export default function App() {
       <main className="mx-auto max-w-6xl px-4 py-7 sm:px-6 lg:px-8">
         {showHome && (
           <section className="space-y-8">
-            <TodayObservation
-              base={latestBase}
-              log={latestLog}
-              getWeatherIcon={getWeatherIcon}
-              onOpenBase={() => latestBase && setSelectedBaseId(latestBase.id)}
-            />
-
             <section className="space-y-3">
               <SectionHeading
-                title="散步路线"
-                description="不是地图服务，只是一张平时走路时脑子里的草图。"
+                title="探索地图"
+                description="基地位置分布图，按发现的先后顺序编号。鼠标悬停速览，点击进入基地。"
               />
               <WalkMap
                 bases={bases}
@@ -346,20 +333,10 @@ export default function App() {
             </section>
 
             <section className="space-y-3">
-              <div className="flex items-end justify-between gap-3">
-                <SectionHeading
-                  title="五个基地"
-                  description="每个地点先是一张照片，然后才是一段描述。"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowAddBase(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8]"
-                >
-                  <Plus className="h-4 w-4" />
-                  新地点
-                </button>
-              </div>
+              <SectionHeading
+                title="基地卡片"
+                description="基地的最新日志和图片。点击查看该基地的所有日志。"
+              />
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {bases.map((base) => (
@@ -373,29 +350,6 @@ export default function App() {
               </div>
             </section>
 
-            <section className="space-y-3">
-              <SectionHeading
-                title="最近观察"
-                description="按时间倒序留下来的自然观察。"
-              />
-              <div className="space-y-4">
-                {sortedLogs.slice(0, 5).map((log) => {
-                  const base = bases.find((item) => item.id === log.baseId);
-                  return (
-                    <RecentObservation
-                      key={log.id}
-                      log={log}
-                      base={base}
-                      getWeatherIcon={getWeatherIcon}
-                      onOpenBase={() => {
-                        setSelectedBaseId(log.baseId);
-                        setActiveTab('bases');
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            </section>
           </section>
         )}
 
@@ -404,50 +358,65 @@ export default function App() {
             base={activeBaseDetails}
             logs={activeBaseLogs}
             getWeatherIcon={getWeatherIcon}
+            isEditing={isEditing}
             onBack={() => setSelectedBaseId(null)}
-            onAddLog={() => setShowAddLog(true)}
             onDeleteLog={handleDeleteLog}
           />
         )}
 
         {activeTab === 'timeline' && (
           <section className="space-y-5">
-            <div className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-4 shadow-sm shadow-emerald-950/5">
-              <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
-                <label className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A987E]" />
+            <div className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7]/90 p-3 shadow-sm shadow-emerald-950/5 backdrop-blur">
+              <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-[minmax(260px,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                <label className="group relative">
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A987E] transition-colors group-focus-within:text-[#2F5D4A]" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="搜索记录、天气或标签"
-                    className="w-full rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] py-2.5 pl-9 pr-3 text-sm outline-none transition-colors focus:border-[#7FA06E]"
+                    className="h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-[#8A987E] focus:border-[#7FA06E] focus:bg-[#FFFDF7]"
                   />
                 </label>
-                <select
-                  value={filterBaseId}
-                  onChange={(event) => setFilterBaseId(event.target.value)}
-                  className="rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-2.5 text-sm outline-none focus:border-[#7FA06E]"
-                >
-                  <option value="all">所有地点</option>
-                  {bases.map((base) => (
-                    <option key={base.id} value={base.id}>
-                      {base.title}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={filterWeather}
-                  onChange={(event) => setFilterWeather(event.target.value)}
-                  className="rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-2.5 text-sm outline-none focus:border-[#7FA06E]"
-                >
-                  <option value="all">所有天气</option>
-                  <option value="sunny">晴</option>
-                  <option value="cloudy">多云</option>
-                  <option value="rainy">雨</option>
-                  <option value="overcast">阴</option>
-                  <option value="windy">风</option>
-                </select>
+                <label className="group relative">
+                  <Calendar className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A987E] transition-colors group-focus-within:text-[#2F5D4A]" />
+                  <input
+                    type="date"
+                    value={filterDate}
+                    onChange={(event) => setFilterDate(event.target.value)}
+                    className="h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7]"
+                  />
+                </label>
+                <label className="group relative">
+                  <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A987E] transition-colors group-focus-within:text-[#2F5D4A]" />
+                  <select
+                    value={filterBaseId}
+                    onChange={(event) => setFilterBaseId(event.target.value)}
+                    className="h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7]"
+                  >
+                    <option value="all">所有地点</option>
+                    {bases.map((base) => (
+                      <option key={base.id} value={base.id}>
+                        {base.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="group relative">
+                  <Cloud className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A987E] transition-colors group-focus-within:text-[#2F5D4A]" />
+                  <select
+                    value={filterWeather}
+                    onChange={(event) => setFilterWeather(event.target.value)}
+                    className="h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7]"
+                  >
+                    <option value="all">所有天气</option>
+                    <option value="sunny">晴</option>
+                    <option value="cloudy">多云</option>
+                    <option value="rainy">雨</option>
+                    <option value="overcast">阴</option>
+                    <option value="windy">风</option>
+                  </select>
+                </label>
               </div>
             </div>
 
@@ -465,6 +434,7 @@ export default function App() {
                     log={log}
                     base={base}
                     getWeatherIcon={getWeatherIcon}
+                    isEditing={isEditing}
                     onOpenBase={() => {
                       setSelectedBaseId(log.baseId);
                       setActiveTab('bases');
@@ -618,79 +588,54 @@ const SectionHeading: React.FC<{ title: string; description: string }> = ({
   );
 };
 
-const TodayObservation: React.FC<{
-  base: Base | null;
-  log: WalkLog | null;
-  getWeatherIcon: (weather: string) => React.ReactNode;
-  onOpenBase: () => void;
-}> = ({ base, log, getWeatherIcon, onOpenBase }) => {
-  if (!log || !base) {
-    return (
-      <section
-        id="today-observation"
-        className="scroll-mt-32 rounded-2xl border border-[#DDE5D6] bg-[#FFFDF7] p-8 shadow-sm shadow-emerald-950/5"
-      >
-        <p className="font-serif text-2xl text-[#243C32]">今日观察</p>
-        <p className="mt-4 text-sm leading-7 text-[#66745E]">
-          还没有散步记录。等第一次写下来的时候，这里会像日记本第一页一样展开。
-        </p>
-      </section>
-    );
-  }
-
-  const evidencePhoto = logPhotos(log)[0] ?? base.coverImage;
-
+const AuthorTools: React.FC<{
+  isEditing: boolean;
+  onAddLog: () => void;
+  onAddBase: () => void;
+  onToggleEditing: () => void;
+  onResetData: () => void;
+}> = ({ isEditing, onAddLog, onAddBase, onToggleEditing, onResetData }) => {
   return (
-    <section
-      id="today-observation"
-      className="scroll-mt-32 rounded-2xl border border-[#DDE5D6] bg-[#FFFDF7] shadow-sm shadow-emerald-950/5"
-    >
-      <div className="p-6 sm:p-8 lg:p-10">
-        <div className="border-b border-[#DDE5D6] pb-5">
-          <p className="font-mono text-[11px] tracking-[0.22em] text-[#7D8C74]">
-            FIELD NOTE / {formatDate(log.date)}
-          </p>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="font-serif text-4xl font-semibold tracking-tight text-[#243C32] sm:text-5xl">
-                今日观察
-              </p>
-              <button
-                type="button"
-                onClick={onOpenBase}
-                className="mt-3 block font-serif text-xl font-semibold text-[#2F5D4A] transition-colors hover:text-[#254938]"
-              >
-                {baseName(base)}
-              </button>
-            </div>
-            <p className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#EEF4E8] px-3 py-1 text-xs text-[#5B7055]">
-              {getWeatherIcon(log.weather)}
-              {log.weatherText}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start">
-          <article className="max-w-3xl">
-            <p className="whitespace-pre-line font-serif text-[19px] leading-9 text-stone-800 sm:text-[20px] sm:leading-10">
-              {log.content}
-            </p>
-          </article>
-
-          <figure className="rounded-xl border border-[#DDE5D6] bg-[#F6F6EC] p-2">
-            <img
-              src={evidencePhoto}
-              alt={base.title}
-              referrerPolicy="no-referrer"
-              className="aspect-[4/3] w-full rounded-lg object-cover"
-            />
-            <figcaption className="px-1 pt-2 text-xs leading-5 text-[#6B7E65]">
-              {log.photos?.length ? '这一日留下的照片证据。' : `${base.title} 的地点照片。`}
-            </figcaption>
-          </figure>
-        </div>
-      </div>
-    </section>
+    <aside className="fixed top-28 z-30 hidden w-36 flex-col gap-2 xl:right-4 xl:flex 2xl:left-[calc(50%+36rem+1.5rem)] 2xl:right-auto">
+      <p className="px-1 text-[11px] font-medium text-[#7D8C74]">作者工具</p>
+      <button
+        type="button"
+        onClick={onAddLog}
+        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#2F5D4A] px-3 py-2 text-xs font-medium text-[#FFFDF4] shadow-sm transition-colors hover:bg-[#254938]"
+      >
+        <Plus className="h-4 w-4" />
+        记录
+      </button>
+      <button
+        type="button"
+        onClick={onAddBase}
+        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] shadow-sm transition-colors hover:bg-[#EEF4E8]"
+      >
+        <Plus className="h-4 w-4" />
+        新基地
+      </button>
+      <button
+        type="button"
+        onClick={onToggleEditing}
+        className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium shadow-sm transition-colors ${
+          isEditing
+            ? 'border-[#2F5D4A] bg-[#EEF4E8] text-[#2F5D4A] hover:bg-[#E1ECD9]'
+            : 'border-[#C9D9C3] bg-[#FFFDF7] text-[#2F5D4A] hover:bg-[#EEF4E8]'
+        }`}
+      >
+        <Pencil className="h-4 w-4" />
+        {isEditing ? '完成' : '编辑'}
+      </button>
+      <button
+        type="button"
+        onClick={onResetData}
+        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#6B7E65] shadow-sm transition-colors hover:bg-[#F1F5EA] hover:text-[#2F5D4A]"
+        title="恢复默认数据"
+      >
+        <RotateCcw className="h-4 w-4" />
+        恢复默认
+      </button>
+    </aside>
   );
 };
 
@@ -755,8 +700,8 @@ interface BaseDetailProps {
   base: Base;
   logs: WalkLog[];
   getWeatherIcon: (weather: string) => React.ReactNode;
+  isEditing: boolean;
   onBack: () => void;
-  onAddLog: () => void;
   onDeleteLog: (id: string) => void;
 }
 
@@ -764,8 +709,8 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
   base,
   logs,
   getWeatherIcon,
+  isEditing,
   onBack,
-  onAddLog,
   onDeleteLog
 }) => {
   return (
@@ -788,21 +733,13 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
             className="h-64 w-full object-cover md:h-full"
           />
           <div className="p-5 sm:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
               <div>
                 <p className="text-xs text-[#7D8C74]">{base.subtitle}</p>
                 <h1 className="mt-1 font-serif text-3xl font-semibold text-[#243C32]">
                   {base.title}
                 </h1>
               </div>
-              <button
-                type="button"
-                onClick={onAddLog}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#2F5D4A] px-3 py-2 text-xs font-medium text-[#FFFDF4] transition-colors hover:bg-[#254938]"
-              >
-                <Plus className="h-4 w-4" />
-                写一条
-              </button>
             </div>
             <p className="mt-4 flex items-center gap-1.5 text-xs text-[#6B7E65]">
               <MapPin className="h-4 w-4" />
@@ -827,6 +764,7 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
               key={log.id}
               log={log}
               getWeatherIcon={getWeatherIcon}
+              isEditing={isEditing}
               onDelete={() => onDeleteLog(log.id)}
             />
           ))
@@ -840,6 +778,7 @@ interface LogCardProps {
   log: WalkLog;
   base?: Base;
   getWeatherIcon: (weather: string) => React.ReactNode;
+  isEditing: boolean;
   onOpenBase?: () => void;
   onDelete: () => void;
 }
@@ -848,14 +787,34 @@ const LogCard: React.FC<LogCardProps> = ({
   log,
   base,
   getWeatherIcon,
+  isEditing,
   onOpenBase,
   onDelete
 }) => {
   const photos = logPhotos(log);
+  const [showActions, setShowActions] = useState(false);
+  const actionsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showActions) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (actionsRef.current?.contains(event.target as Node)) return;
+      setShowActions(false);
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
+  }, [showActions]);
+
+  useEffect(() => {
+    if (!isEditing) setShowActions(false);
+  }, [isEditing]);
 
   return (
-    <article className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-4 shadow-sm shadow-emerald-950/5">
-      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="relative" ref={actionsRef}>
+      <article className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-4 pr-12 shadow-sm shadow-emerald-950/5 xl:pr-4">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="flex flex-wrap items-center gap-2 text-xs text-[#6B7E65]">
           <span className="inline-flex items-center gap-1 rounded-md bg-[#EEF4E8] px-2 py-1 font-mono text-[#5B7055]">
             <Calendar className="h-3.5 w-3.5" />
@@ -875,14 +834,6 @@ const LogCard: React.FC<LogCardProps> = ({
             </button>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onDelete}
-          title="删除"
-          className="self-start rounded-md p-1.5 text-stone-300 transition-colors hover:bg-rose-50 hover:text-rose-700 sm:self-auto"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
       </div>
       <p className="whitespace-pre-line font-serif text-base leading-8 text-stone-800">
         {log.content}
@@ -914,6 +865,33 @@ const LogCard: React.FC<LogCardProps> = ({
           </span>
         ))}
       </div>
-    </article>
+      </article>
+      {isEditing && (
+        <button
+          type="button"
+          onClick={() => setShowActions((current) => !current)}
+          title="更多操作"
+          aria-expanded={showActions}
+          className="absolute right-3 top-3 rounded-md border border-transparent bg-[#FFFDF7] p-1.5 text-[#8A987E] shadow-sm transition-colors hover:border-[#DDE5D6] hover:bg-[#F1F5EA] hover:text-[#2F5D4A] xl:-right-11 xl:border-[#E5DED3]"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      )}
+      {isEditing && showActions && (
+        <div className="absolute right-3 top-11 z-20 w-28 rounded-lg border border-[#E5DED3] bg-[#FFFDF7] p-1 shadow-lg shadow-stone-900/10 xl:-right-11">
+          <button
+            type="button"
+            onClick={() => {
+              setShowActions(false);
+              onDelete();
+            }}
+            className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs font-medium text-rose-700 transition-colors hover:bg-rose-50"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            删除
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
