@@ -1,0 +1,6 @@
+{
+  "name": "故乡散步秘密基地观测日记",
+  "description": "记录在故乡山下（森林）与河边散步的五个秘密基地，细致观察并记录水质清浑、禽鸟野鸭、云海苍穹、松针鸣虫等自然变化的温情漫步日记系统。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

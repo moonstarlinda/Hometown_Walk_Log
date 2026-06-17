@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>乡野漫步：基地观察志</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', 'Noto Serif SC', serif;
+  background: #f5f0e8;
+  color: #3a3a38;
+  line-height: 1.8;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+header { margin-bottom: 2.5rem; }
+h1 {
+  font-size: 1.8rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: #4a5a3a;
+}
+.subtitle {
+  font-size: 0.9rem;
+  color: #8a8a7a;
+  margin-top: 0.3rem;
+  font-style: italic;
+}
+.bases-grid { display: grid; gap: 1rem; margin-bottom: 2.5rem; }
+.base-card {
+  background: #fffcf5;
+  border: 1px solid #e0d8c8;
+  border-radius: 8px;
+  padding: 1rem 1.3rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.base-card:hover { border-color: #b8c8a8; background: #faf8f0; }
+.base-card h2 {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #4a5a3a;
+  display: inline;
+}
+.base-card .icon { font-size: 1.3rem; margin-right: 0.4rem; }
+.base-card .meta {
+  font-size: 0.8rem;
+  color: #9a9a8a;
+  margin-top: 0.3rem;
+}
+.base-card .meta span { margin-right: 0.8rem; }
+.base-card .desc {
+  font-size: 0.88rem;
+  color: #6a6a5a;
+  margin-top: 0.4rem;
+}
+.log-entry {
+  background: #fffcf5;
+  border-left: 3px solid #b8c8a8;
+  padding: 0.9rem 1.2rem;
+  margin-bottom: 1rem;
+  border-radius: 0 6px 6px 0;
+}
+.log-entry .date {
+  font-size: 0.88rem;
+  color: #7a8a6a;
+  font-weight: 500;
+}
+.log-entry .weather {
+  font-size: 0.8rem;
+  color: #9a9a8a;
+  margin-left: 0.5rem;
+}
+.log-entry .content {
+  font-size: 0.9rem;
+  margin-top: 0.4rem;
+  color: #4a4a3a;
+  white-space: pre-line;
+}
+.log-entry .bgm {
+  font-size: 0.82rem;
+  color: #8a8a7a;
+  font-style: italic;
+  margin-top: 0.2rem;
+}
+.photo-grid {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+.photo-grid img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e0d8c8;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.photo-grid img:hover { transform: scale(1.03); }
+.photo-grid .caption {
+  font-size: 0.75rem;
+  text-align: center;
+  color: #9a9a8a;
+  margin-top: 0.2rem;
+}
+.back-btn {
+  display: inline-block;
+  margin-bottom: 1.2rem;
+  font-size: 0.88rem;
+  color: #7a8a6a;
+  cursor: pointer;
+}
+.back-btn:hover { color: #4a5a3a; }
+.stats {
+  margin-top: 2.5rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid #e0d8c8;
+  font-size: 0.85rem;
+  color: #8a8a7a;
+  line-height: 2;
+}
+.stats strong { color: #5a6a4a; }
+.hidden { display: none; }
+.cloud-link {
+  margin-top: 1.5rem;
+  padding: 0.8rem;
+  background: #f0ece4;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #7a8a7a;
+}
+.cloud-link a { color: #5a7a4a; }
+/* 图片弹窗 */
+.lightbox {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.75);
+  display: none; align-items: center; justify-content: center;
+  z-index: 100;
+  cursor: pointer;
+}
+.lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 6px;
+}
+.lightbox.show { display: flex; }
+@media (min-width: 620px) {
+  .bases-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="lightbox" class="lightbox" onclick="closeLightbox()"><img id="lightbox-img" src="" alt=""></div>
+
+<header>
+  <h1>乡野漫步</h1>
+  <p class="subtitle">基地观察志 · 二〇二六夏 · 伊春</p>
+</header>
+
+<div id="home-view">
+  <div class="bases-grid" id="bases-grid"></div>
+  <div class="stats" id="home-stats"></div>
+  <div class="cloud-link">
+    🦐 小北云旅行已走过 40 站 · <a href="https://xiaobei-world.vercel.app" target="_blank">小北的世界</a>
+  </div>
+</div>
+
+<div id="detail-view" class="hidden">
+  <a class="back-btn" onclick="showHome()">← 返回</a>
+  <h2 id="detail-title" style="font-weight:400;color:#4a5a3a;margin-bottom:0.5rem;"></h2>
+  <div id="detail-desc" style="font-size:0.88rem;color:#6a6a5a;margin-bottom:0.5rem;"></div>
+  <div id="detail-photos"></div>
+  <div id="detail-logs"></div>
+</div>
+
+<script>
+const bases = [
+  {
+    id:"b1", name:"一号基地 · 小河边", icon:"🌊", visits:10, lastVisit:"6月15日",
+    desc:"河边看水，对岸钓鱼。鸭子来去，捡过石头和松枝，差点滑倒。",
+    characters:["钓鱼佬 🎣×9","绿头鸭 🦆×8"]
+  },
+  {
+    id:"b2", name:"二号基地 · 松树凳 · 云观察站", icon:"☁️", visits:9, lastVisit:"6月15日",
+    desc:"长椅对山，主要任务是看云。发现过三层云结构、风力分层、局地化云。曾被老头老太太轮番占领。",
+    characters:["抽烟老头 🚬","世界杯老头 ⚽","两个老太太 👵👵","弹弓男 🎯","三个喝酒老头 🍺","悬丝绿色毛毛虫 🐛"]
+  },
+  {
+    id:"b3", name:"三号基地 · 水泥台阶", icon:"🐱", visits:3, lastVisit:"6月7日",
+    desc:"河坝台阶，黑猫驻守。最安静的基地。",
+    characters:["黑猫 🐱（常驻）"]
+  },
+  {
+    id:"b4", name:"四号基地 · 水文站台阶", icon:"🏭", visits:5, lastVisit:"6月13日",
+    desc:"水文站旁台阶，视野开阔。雨中坐到水文站，有Einaudi时刻。",
+    characters:["钓鱼佬 🎣"]
+  },
+  {
+    id:"b5", name:"五号基地 · 河谷基地", icon:"🏔️", visits:1, lastVisit:"6月11日",
+    desc:"远征40分钟。山+河+谷+花海+草地。毛樱桃已熟。",
+    characters:["鸢尾花 🌸","蝴蝶 🦋"]
+  }
+];
+
+const logs = {
+  b1: [
+    {d:"6月15日",w:"晴 ☀️",n:"水清澈✅ 鸭子缺席 钓鱼佬2人 差点滑倒⚠️"},
+    {d:"6月13日",w:"晴 ☀️",n:"老人河边尿尿占位→回程收复。用ChatGPT认树🌲 捡松树枝🌿 棕色毛毛虫🐛"},
+    {d:"6月12日",w:"雨后☁️",n:"绿头鸭2只回归🦆🦆 一天两刷——黄昏看鸭子游走背影 钓鱼佬3→2人"},
+    {d:"6月10日",w:"大晴天 ☀️",n:"水面垃圾消失 鸭子不在 钓鱼空场 捡玉色石头🪨 今天：空·净·亮"},
+    {d:"6月7日",w:"阴天 ☁️🎷",n:"BGM午夜巴黎爵士 黄色塑料袋→小鸭子🦆 独钓 绿色悬丝毛毛虫🐛"},
+    {d:"6月3日",w:"—",n:"捡石头。投资感悟：核心资产该加仓不是减仓"},
+    {d:"5月26日",w:"停电下午",n:"第一次发现。看水看树，对岸一人钓鱼🎣"}
+  ],
+  b2: [
+    {d:"6月15日",w:"晴有风 ☀️🌬️",n:"长椅被两个老太太占👵👵\n云：中等厚度棉絮状，西→东移动\n发现东向V形🔽+北向V形🔽树冠，南边树缝看河水\n水流比云快。落枕观天受限",bgm:"Through the Blue"},
+    {d:"6月14日",w:"云如棉花柳絮 ☁️",n:"长椅空出✅ 两车停了人走了\n云：极薄一层像宇宙网\n风向西→东（首次记录）\n捡14根烟头🧹💚"},
+    {d:"6月13日",w:"晴 ☀️",n:"长椅再被占（世界杯老头⚽）弹弓男🎯\n发现新躺卧观察点仰望树上\n连续两次未能坐上长椅😅"},
+    {d:"6月12日",w:"雨后 ☁️",n:"长椅首次被占（抽烟老头📱🚬）只能在旁边观察"},
+    {d:"6月10日",w:"大晴天→局部多云 ☀️🌤️",n:"⛅ 云移动东→西（与前不同！）\n发现局地化云：只有头顶有云旁边有阳光\n发现低层烟缕云贴森林顶端\n首次完整观察到三层云结构🌫️☁️"},
+    {d:"6月7日",w:"阴天",n:"云整体移动无分层（与昨天不同）\n阳光透云如翡翠纹理\n森林分层发现：低层枝静高层冠动\n发现绿色悬丝毛毛虫🐛",bgm:"《午夜巴黎》Sidney Bechet 🎷"},
+    {d:"6月6日",w:"阴天有风",n:"⭐ 最重要云发现日！\n云分两层：下层快（南→北）上层不动\n证明不同高度风向不同"},
+    {d:"5月26日",w:"停电下午",n:"第一次发现这张松树长椅。天很蓝。"}
+  ],
+  b3: [
+    {d:"6月7日",w:"阴天",n:"第三次去，黑猫不在。"},
+    {d:"6月6日",w:"阴天",n:"直落三号，黑猫不在。"},
+    {d:"5月26日",w:"停电下午",n:"发现日！黑猫🐱第一次出现，蹲在台阶上看着你。"}
+  ],
+  b4: [
+    {d:"6月13日",w:"晴 ☀️",n:"水文站台阶，钓鱼人在远处。"},
+    {d:"6月11日",w:"—",n:"台阶上的安静时刻。"},
+    {d:"6月5日",w:"下雨10°C 🌧️",n:"雨中坐到水文站台阶。"},
+    {d:"6月2日",w:"—",n:"发现日。水文站旁台阶，视野开阔。"}
+  ],
+  b5: [
+    {d:"6月11日",w:"晴",n:"发现日——远征40分钟🏔️🌺\n山+河+谷+花海+草地+紫色鸢尾花🌸\n毛樱桃已熟。最完整但最远。"}
+  ]
+};
+
+const photos = {
+  b1: [{src:"images/一号基地_鸭子_2026-06-07.jpg", caption:"6月7日 · 水面中央的鸭子 🦆"}],
+  b2: [
+    {src:"images/二号基地_东向V形树冠_2026-06-15.jpg", caption:"6月15日 · 东向树冠V形 🔽"},
+    {src:"images/二号基地_北向V形树冠_2026-06-15.jpg", caption:"6月15日 · 北向树冠V形 🔽"},
+    {src:"images/二号基地_无人版长椅_2026-06-15.jpg", caption:"6月15日 · 松树前的长椅 🪑"}
+  ],
+  b3: [
+    {src:"images/三号基地_河坝台阶_2026-05-26.jpg", caption:"5月26日 · 河坝台阶"},
+    {src:"images/三号基地_黑猫_2026-05-26.jpg", caption:"5月26日 · 三号基地守护灵 🐱"}
+  ],
+  b4: [],
+  b5: []
+};
+
+const totalDays = 25, totalPhotos = 6, cloudTravelDays = 40;
+
+function showHome() {
+  document.getElementById("home-view").classList.remove("hidden");
+  document.getElementById("detail-view").classList.add("hidden");
+}
+
+function openLightbox(src) {
+  document.getElementById("lightbox-img").src = src;
+  document.getElementById("lightbox").classList.add("show");
+}
+function closeLightbox() {
+  document.getElementById("lightbox").classList.remove("show");
+}
+
+function renderHome() {
+  const grid = document.getElementById("bases-grid");
+  grid.innerHTML = bases.map(b =>
+    `<div class="base-card" onclick="showDetail('${b.id}')">
+      <span class="icon">${b.icon}</span><h2>${b.name}</h2>
+      <div class="meta"><span>${b.visits}次</span><span>最近${b.lastVisit}</span></div>
+      <div class="desc">${b.desc}</div>
+    </div>`
+  ).join("");
+  document.getElementById("home-stats").innerHTML =
+    `五个基地 · 累计观察 <strong>${totalDays}</strong> 天 · 影像 <strong>${totalPhotos}</strong> 张<br>` +
+    `钓鱼佬 🎣 登场9次 · 绿头鸭 🦆 登场8次 · 黑猫 🐱 常驻 · 老年群演轮番登场<br>` +
+    `云旅行已走 <strong>${cloudTravelDays}</strong> 站`;
+}
+
+function showDetail(id) {
+  const base = bases.find(b => b.id === id);
+  if (!base) return;
+  document.getElementById("home-view").classList.add("hidden");
+  document.getElementById("detail-view").classList.remove("hidden");
+  document.getElementById("detail-title").textContent = `${base.icon} ${base.name}`;
+  document.getElementById("detail-desc").textContent =
+    (base.characters||[]).length ? `住客：${base.characters.join(" · ")}` : "";
+  const imgs = photos[id]||[];
+  document.getElementById("detail-photos").innerHTML = imgs.length
+    ? `<div class="photo-grid">${imgs.map(p=>
+        `<div><img src="${p.src}" onclick="openLightbox('${p.src}')" alt=""><div class="caption">${p.caption}</div></div>`
+      ).join("")}</div>`
+    : "";
+  document.getElementById("detail-logs").innerHTML =
+    (logs[id]||[]).map(e =>
+      `<div class="log-entry">
+        <div class="date">${e.d} <span class="weather">${e.w}</span></div>
+        <div class="content">${e.n}</div>
+        ${e.bgm ? `<div class="bgm">🎵 ${e.bgm}</div>` : ""}
+      </div>`
+    ).join("");
+}
+
+renderHome();
+</script>
+</body>
+</html>
