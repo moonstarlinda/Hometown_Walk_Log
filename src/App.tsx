@@ -38,6 +38,15 @@ import openingWalkingIntoForest from './assets/images/opening_walking_into_the_f
 const BASES_STORAGE_KEY = 'hometown_bases';
 const LOGS_STORAGE_KEY = 'hometown_logs';
 const INTRO_STORAGE_KEY = 'hometown_opening_intro_seen';
+const ROADSIDE_LOCATION_ID = 'roadside-observations';
+const ROADSIDE_LOCATION: Base = {
+  id: ROADSIDE_LOCATION_ID,
+  title: '途中见闻',
+  subtitle: 'Roadside Notes',
+  description: '不属于任何固定基地的路上事情：偶遇的云影、岔路口的风、临时停下来看见的小变化，都先放在这里。',
+  location: '散步途中，尚未归入某个基地的片段',
+  coverImage: openingWalkingIntoForest
+};
 
 export default function App() {
   const prefersReducedMotion = useReducedMotion();
@@ -108,7 +117,9 @@ export default function App() {
   );
 
   const activeBaseDetails = selectedBaseId
-    ? bases.find((base) => base.id === selectedBaseId) ?? null
+    ? selectedBaseId === ROADSIDE_LOCATION_ID
+      ? ROADSIDE_LOCATION
+      : bases.find((base) => base.id === selectedBaseId) ?? null
     : null;
 
   const activeBaseLogs = useMemo(() => {
@@ -122,6 +133,8 @@ export default function App() {
       latest[base.id] =
         sortedLogs.find((log) => log.baseId === base.id)?.content ?? null;
     });
+    latest[ROADSIDE_LOCATION_ID] =
+      sortedLogs.find((log) => log.baseId === ROADSIDE_LOCATION_ID)?.content ?? null;
     return latest;
   }, [bases, sortedLogs]);
 
@@ -256,6 +269,14 @@ export default function App() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                onClick={handleResetData}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#6B7E65] transition-colors hover:bg-[#F1F5EA] hover:text-[#2F5D4A]"
+              >
+                <RotateCcw className="h-4 w-4" />
+                恢复默认
+              </button>
+              <button
+                type="button"
                 onClick={replayIntro}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8]"
               >
@@ -335,7 +356,7 @@ export default function App() {
             <section className="space-y-3">
               <SectionHeading
                 title="基地卡片"
-                description="基地的最新日志和图片。点击查看该基地的所有日志。"
+                description="每张卡片保留地点封面，文字显示最新记录。点击查看该基地的所有日志。"
               />
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -347,6 +368,13 @@ export default function App() {
                     onClick={() => setSelectedBaseId(base.id)}
                   />
                 ))}
+                <BaseNoteCard
+                  base={ROADSIDE_LOCATION}
+                  latestText={
+                    latestLogPerBase[ROADSIDE_LOCATION_ID] ?? ROADSIDE_LOCATION.description
+                  }
+                  onClick={() => setSelectedBaseId(ROADSIDE_LOCATION_ID)}
+                />
               </div>
             </section>
 
@@ -400,6 +428,7 @@ export default function App() {
                         {base.title}
                       </option>
                     ))}
+                    <option value={ROADSIDE_LOCATION_ID}>途中见闻</option>
                   </select>
                 </label>
                 <label className="group relative">
@@ -427,7 +456,10 @@ export default function App() {
 
             <div className="space-y-3">
               {filteredLogs.map((log) => {
-                const base = bases.find((item) => item.id === log.baseId);
+                const base =
+                  log.baseId === ROADSIDE_LOCATION_ID
+                    ? ROADSIDE_LOCATION
+                    : bases.find((item) => item.id === log.baseId);
                 return (
                   <LogCard
                     key={log.id}
@@ -458,7 +490,7 @@ export default function App() {
         {showAddLog && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <AddLogModal
-              bases={bases}
+              bases={[...bases, ROADSIDE_LOCATION]}
               selectedBaseId={selectedBaseId}
               onClose={() => setShowAddLog(false)}
               onAddLog={handleAddLog}
@@ -549,6 +581,65 @@ function shortText(text: string, maxLength = 72) {
 function logPhotos(log: WalkLog) {
   return log.photos?.filter(Boolean) ?? [];
 }
+
+const LogPhotoGrid: React.FC<{
+  photos: string[];
+  date: string;
+}> = ({ photos, date }) => {
+  const visiblePhotos = photos.slice(0, 3);
+
+  if (visiblePhotos.length === 0) return null;
+
+  if (visiblePhotos.length === 1) {
+    return (
+      <div className="mt-4 w-fit">
+        <figure className="overflow-hidden rounded-lg">
+          <img
+            src={visiblePhotos[0]}
+            alt={`${formatDate(date)} observation`}
+            referrerPolicy="no-referrer"
+            loading="lazy"
+            className="h-44 w-auto max-w-xs object-contain"
+          />
+        </figure>
+      </div>
+    );
+  }
+
+  if (visiblePhotos.length === 2) {
+    return (
+      <div className="mt-4 flex flex-wrap items-start gap-2">
+        {visiblePhotos.map((photo, index) => (
+          <figure key={`${photo}-${index}`} className="overflow-hidden rounded-lg">
+            <img
+              src={photo}
+              alt={`${formatDate(date)} observation ${index + 1}`}
+              referrerPolicy="no-referrer"
+              loading="lazy"
+              className="h-36 w-auto max-w-[240px] object-contain sm:h-40"
+            />
+          </figure>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 flex flex-wrap items-start gap-2">
+      {visiblePhotos.map((photo, index) => (
+        <figure key={`${photo}-${index}`} className="overflow-hidden rounded-lg">
+          <img
+            src={photo}
+            alt={`${formatDate(date)} observation ${index + 1}`}
+            referrerPolicy="no-referrer"
+            loading="lazy"
+            className="h-28 w-auto max-w-[200px] object-contain sm:h-36"
+          />
+        </figure>
+      ))}
+    </div>
+  );
+};
 
 interface TabButtonProps {
   active: boolean;
@@ -838,23 +929,7 @@ const LogCard: React.FC<LogCardProps> = ({
       <p className="whitespace-pre-line font-serif text-base leading-8 text-stone-800">
         {log.content}
       </p>
-      {photos.length > 0 && (
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          {photos.slice(0, 4).map((photo, index) => (
-            <figure
-              key={`${photo}-${index}`}
-              className="rounded-lg border border-[#DDE5D6] bg-[#F6F6EC] p-1.5"
-            >
-              <img
-                src={photo}
-                alt={`${formatDate(log.date)} observation ${index + 1}`}
-                referrerPolicy="no-referrer"
-                className="aspect-[4/3] w-full rounded-md object-cover"
-              />
-            </figure>
-          ))}
-        </div>
-      )}
+      <LogPhotoGrid photos={photos} date={log.date} />
       <div className="mt-3 flex flex-wrap gap-1.5">
         {log.tags.map((tag) => (
           <span

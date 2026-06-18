@@ -165,7 +165,7 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
             散步日历
           </h2>
           <p className="mt-1 text-sm leading-6 text-[#6B7E65]">
-            2026 年 5 月开始到年底留下日志的日子，颜色越深，记录越密。
+            记录那些走出家门、与河流、树林和天空相遇的日子。
           </p>
         </div>
 

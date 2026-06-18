@@ -103,7 +103,7 @@ export default function AddLogModal({
           <div>
             <h3 className="text-lg font-serif font-bold text-stone-800">记下一笔新的散步观测</h3>
             <p className="text-xs text-stone-500 mt-1">
-              文字不长，字字珠玑。连续记录秘密大本营的水草、飞禽、松涛与长空。
+              文字不长，字字珠玑。记录基地里的水草、飞禽、松涛，也收好路上的偶遇。
             </p>
           </div>
           <button 
@@ -120,7 +120,7 @@ export default function AddLogModal({
           {/* Base Selection Row */}
           <div>
             <label className="block text-xs font-serif font-bold text-stone-700 mb-1.5">
-              1. 选定所到访的秘密基地 Base *
+              1. 选定记录位置 Place *
             </label>
             <select
               value={baseId}
@@ -277,7 +277,7 @@ export default function AddLogModal({
             className="px-6 py-2 text-xs bg-emerald-800 hover:bg-emerald-950 rounded-xl font-semibold text-white transition-colors flex items-center gap-1.5"
           >
             <Save className="w-4 h-4" />
-            保存日志到秘密基地
+            保存散步日志
           </button>
         </div>
       </div>
