@@ -90,6 +90,8 @@ export default function App() {
   }, []);
 
   const replayIntro = useCallback(() => {
+    setSelectedBaseId(null);
+    setActiveTab('bases');
     setShowIntro(true);
   }, []);
 
@@ -267,14 +269,6 @@ export default function App() {
             </button>
 
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleResetData}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#6B7E65] transition-colors hover:bg-[#F1F5EA] hover:text-[#2F5D4A]"
-              >
-                <RotateCcw className="h-4 w-4" />
-                恢复默认
-              </button>
               <button
                 type="button"
                 onClick={replayIntro}
@@ -739,13 +733,13 @@ const BaseNoteCard: React.FC<{
     <button
       type="button"
       onClick={onClick}
-      className="group overflow-hidden rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] text-left shadow-sm shadow-emerald-950/5 transition-colors hover:border-[#BFD1B8] hover:bg-[#F9FAF2]"
+      className="group flex h-full w-full flex-col overflow-hidden rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] text-left shadow-sm shadow-emerald-950/5 transition-colors hover:border-[#BFD1B8] hover:bg-[#F9FAF2]"
     >
       <img
         src={base.coverImage}
         alt={base.title}
         referrerPolicy="no-referrer"
-        className="h-40 w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        className="block h-40 w-full flex-none object-cover object-center align-top transition-transform duration-500 group-hover:scale-[1.03]"
       />
       <span className="block p-4">
         <span className="block font-serif text-lg font-semibold text-[#243C32]">

@@ -12,6 +12,7 @@ interface NatureStatsProps {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const FOOTSTEP_LEVELS = 10;
 
 function parseDate(date: string) {
   const [year, month, day] = date.split('-').map(Number);
@@ -70,25 +71,43 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
     }
   });
 
-  // 从日志内容中提取的自然意象词汇
-  const natureWords = [
-    '云', '风', '鸭子', '天', '水', '松', '山', '河', '草', '鸟',
-    '雾', '雨', '霞', '鸭', '松树', '夕阳', '落日', '远山', '绿头鸭',
-    '大树', '柳树', '沙洲', '苔藓', '草地', '树林', '松林', '松涛',
-    '波浪', '水波', '蓝天', '白云', '乌云', '晨雾', '彩虹', '霞光'
+  const natureConcepts = [
+    { label: '鸭子', terms: ['绿头鸭', '小鸭子', '鸭子', '鸭'] },
+    { label: '松树', terms: ['落叶松', '樟子松', '松树', '松林', '松涛', '松枝', '松'] },
+    { label: '鸢尾花', terms: ['紫色鸢尾花', '野鸢尾', '鸢尾花', '鸢尾'] },
+    { label: '丁香花', terms: ['丁香花', '丁香'] },
+    { label: '落叶松', terms: ['落叶松'] },
+    { label: '河谷', terms: ['河谷'] },
+    { label: '沙洲', terms: ['小沙洲', '沙洲'] },
+    { label: '长椅', terms: ['松林长椅', '长椅'] },
+    { label: '水文站', terms: ['水文站', '水文测报站'] },
+    { label: '黑猫', terms: ['黑猫'] },
+    { label: '毛毛虫', terms: ['悬丝毛毛虫', '绿色毛毛虫', '棕色毛毛虫', '毛毛虫'] },
+    { label: '石头', terms: ['玉色石头', '白色石头', '小石头', '石子', '石头'] },
+    { label: '云层', terms: ['三层云', '云分层', '烟缕云', '云层', '白云', '乌云'] },
+    { label: '河水', terms: ['河水', '水流', '水面'] },
+    { label: '钓鱼人', terms: ['钓鱼人'] },
+    { label: '帐篷', terms: ['白色帐篷', '彩色帐篷', '帐篷'] },
+    { label: '薄云', terms: ['薄云'] },
+    { label: '霞光', terms: ['霞光', '晚霞', '云霞'] }
   ];
 
-  // 统计日志内容中这些词的出现次数
   const wordCounts: Record<string, number> = {};
-  natureWords.forEach(word => {
+  natureConcepts.forEach(({ label, terms }) => {
     let count = 0;
     logs.forEach(log => {
-      const regex = new RegExp(word, 'g');
-      const matches = log.content.match(regex);
-      count += matches ? matches.length : 0;
+      let remainingContent = log.content;
+      [...terms].sort((a, b) => b.length - a.length).forEach(term => {
+        const regex = new RegExp(term, 'g');
+        const matches = remainingContent.match(regex);
+        if (!matches) return;
+
+        count += matches.length;
+        remainingContent = remainingContent.replace(regex, '');
+      });
     });
     if (count > 0) {
-      wordCounts[word] = count;
+      wordCounts[label] = count;
     }
   });
 
@@ -253,27 +272,50 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
             </div>
           </div>
 
-          <div className="mt-4 rounded-lg border border-[#DDE5D6] bg-[#F4F7ED] p-3">
+          <div className="mt-4 rounded-lg border border-[#DDE5D6] bg-[#F4F7ED] p-4">
             <p className="font-serif text-sm font-semibold text-[#2F5D4A]">
               常去基地
             </p>
-            <div className="mt-2 space-y-2">
-              {logsPerBase.slice(0, 3).filter(base => base.count > 0).map((base, index) => (
-                <div key={base.id} className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-[#66745E] w-28 shrink-0 truncate">
-                    {base.title.replace(/^(\d)号基地 · /, '0$1号基地 · ')}
-                  </span>
-                  <div className="flex-1 h-2 rounded-full bg-[#DCEBD5] overflow-hidden">
+            <div className="mt-3 space-y-2.5">
+              {logsPerBase.slice(0, 3).filter(base => base.count > 0).map((base) => {
+                const maxBaseCount = Math.max(...logsPerBase.map(b => b.count), 1);
+                const activeFootsteps = Math.max(
+                  1,
+                  Math.ceil((base.count / maxBaseCount) * FOOTSTEP_LEVELS)
+                );
+
+                return (
+                  <div
+                    key={base.id}
+                    className="grid grid-cols-1 gap-1.5 sm:grid-cols-[minmax(8.5rem,9.75rem)_minmax(12rem,1fr)_2.25rem] sm:items-center sm:gap-1.5"
+                  >
+                    <span className="min-w-0 truncate text-xs font-medium text-[#66745E]">
+                      {base.title.replace(/^(\d)号基地 · /, '0$1号基地 · ')}
+                    </span>
                     <div
-                      className="h-full rounded-full bg-[#92C68D]"
-                      style={{ width: `${(base.count / Math.max(...logsPerBase.map(b => b.count), 1)) * 100}%` }}
-                    />
+                      className="flex min-w-0 items-center gap-2 text-[15px] leading-none sm:justify-between"
+                      aria-label={`${base.title} 相对访问频次 ${activeFootsteps}/${FOOTSTEP_LEVELS}`}
+                    >
+                      {Array.from({ length: FOOTSTEP_LEVELS }, (_, index) => (
+                        <span
+                          key={index}
+                          aria-hidden="true"
+                          className={
+                            index < activeFootsteps
+                              ? 'text-[#2F6C49]'
+                              : 'text-[#BFD1B8]/55'
+                          }
+                        >
+                          {'👣\uFE0E'}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="text-left text-xs font-medium text-[#4D6B50] sm:text-right">
+                      {base.count}次
+                    </span>
                   </div>
-                  <span className="text-xs text-[#66745E] w-8 text-right shrink-0">
-                    {base.count}次
-                  </span>
-                </div>
-              ))}
+                );
+              })}
               {logsPerBase.filter(base => base.count > 0).length === 0 && (
                 <p className="text-xs text-[#66745E]">暂无记录。</p>
               )}
