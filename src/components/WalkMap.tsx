@@ -17,11 +17,11 @@ interface WalkMapProps {
 }
 
 const SANCTUARY_COLORS: Record<string, { accent: string; soft: string; text: string }> = {
-  'base-1': { accent: '#4C8FA0', soft: '#E3F6FA', text: '#3A6F7D' },
-  'base-2': { accent: '#6F9862', soft: '#EAF6E5', text: '#55784C' },
-  'base-3': { accent: '#5C5A6B', soft: '#EBEAF2', text: '#464455' },
-  'base-4': { accent: '#C98B4F', soft: '#FBEAD8', text: '#936236' },
-  'base-5': { accent: '#A36D8F', soft: '#F6E4F0', text: '#7A526C' }
+  'base-1': { accent: '#4BA3C3', soft: 'color-mix(in srgb, #4BA3C3 12%, white)', text: '#4BA3C3' },
+  'base-2': { accent: '#4E8B5B', soft: 'color-mix(in srgb, #4E8B5B 12%, white)', text: '#4E8B5B' },
+  'base-3': { accent: '#4B4E6D', soft: 'color-mix(in srgb, #4B4E6D 12%, white)', text: '#4B4E6D' },
+  'base-4': { accent: '#D98C3A', soft: 'color-mix(in srgb, #D98C3A 12%, white)', text: '#D98C3A' },
+  'base-5': { accent: '#7A5C8C', soft: 'color-mix(in srgb, #7A5C8C 12%, white)', text: '#7A5C8C' }
 };
 
 function sanctuaryColorForBase(baseId: string) {
@@ -126,7 +126,7 @@ export default function WalkMap({
           <path
             d="M 85 140 C 155 230 230 300 340 300 C 430 300 485 252 540 220 C 595 188 620 180 660 175 C 710 168 725 145 760 130"
             fill="none"
-            stroke={isHockney ? '#208E8D' : '#8FA884'}
+            stroke={isHockney ? '#208E8D' : isSanctuary ? '#9A9B87' : '#8FA884'}
             strokeDasharray={isHockney ? '8 10' : '6 8'}
             strokeLinecap="round"
             strokeWidth="2"
@@ -154,6 +154,15 @@ export default function WalkMap({
                 onMouseEnter={() => setHoveredBaseId(base.id)}
                 onMouseLeave={() => setHoveredBaseId(null)}
               >
+                {isSanctuary && (active || hovered) && (
+                  <circle
+                    cx={pos.x}
+                    cy={pos.y}
+                    r={active ? 38 : 32}
+                    fill={`color-mix(in srgb, ${palette.accent} ${active ? 8 : 6}%, transparent)`}
+                    className="pointer-events-none transition-all"
+                  />
+                )}
                 <circle
                   cx={pos.x}
                   cy={pos.y}
@@ -166,7 +175,9 @@ export default function WalkMap({
                       : isSanctuary
                         ? active
                           ? palette.accent
-                          : palette.soft
+                          : hovered
+                            ? `color-mix(in srgb, ${palette.accent} 18%, white)`
+                            : palette.soft
                       : active
                         ? '#2F5D4A'
                         : '#FFFDF7'
@@ -177,7 +188,9 @@ export default function WalkMap({
                         ? '#0D7192'
                         : '#47B8D2'
                       : isSanctuary
-                        ? palette.accent
+                        ? hovered
+                          ? `color-mix(in srgb, ${palette.accent} 88%, black)`
+                          : palette.accent
                       : active
                         ? '#2F5D4A'
                         : '#7FA06E'
@@ -216,13 +229,13 @@ export default function WalkMap({
 
         {hoveredBase && (
           <div
-            className={`mt-3 rounded-lg border border-[#DDE5D6] bg-[#F4F7ED] p-3 text-sm text-stone-700 md:absolute md:bottom-3 md:left-3 md:mt-0 md:max-w-sm md:bg-[#FFFDF7]/95 ${
+            className={`map-hover-card pointer-events-none bottom-3 left-3 right-3 z-10 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7]/95 p-3 text-sm text-stone-700 shadow-sm shadow-emerald-950/10 md:right-auto md:max-w-sm ${
               isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
             }`}
             style={
               isSanctuary && hoveredPalette
                 ? {
-                    borderColor: hoveredPalette.accent,
+                    borderColor: `color-mix(in srgb, ${hoveredPalette.accent} 15%, transparent)`,
                     backgroundColor: hoveredPalette.soft
                   }
                 : undefined

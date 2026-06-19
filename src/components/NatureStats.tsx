@@ -4,7 +4,7 @@
  */
 
 import { WalkLog, Base } from '../types';
-import { Calendar, CloudSun, Heart, Leaf, Route } from 'lucide-react';
+import { Calendar, CloudSun, Footprints, Heart, Leaf, Route } from 'lucide-react';
 
 interface NatureStatsProps {
   logs: WalkLog[];
@@ -100,32 +100,32 @@ const HOCKNEY_WORD_CLOUD_COLORS: Record<string, string> = {
 };
 const HOCKNEY_WORD_CLOUD_FALLBACK_COLORS = ['#137FBE', '#17A8B8', '#2AAE80', '#4AC4A4', '#587BC8'];
 const SANCTUARY_WORD_CLOUD_COLORS: Record<string, string> = {
-  河水: '#4C8FA0',
-  黑猫: '#5C5A6B',
-  鸢尾花: '#A36D8F',
+  河水: '#4BA3C3',
+  黑猫: '#4B4E6D',
+  鸢尾花: '#7A5C8C',
   水文站: '#8A8D7A',
-  鸭子: '#6F9862',
-  松树: '#6F9862',
-  丁香花: '#A36D8F',
-  落叶松: '#6F9862',
-  河谷: '#4C8FA0',
+  鸭子: '#4E8B5B',
+  松树: '#4E8B5B',
+  丁香花: '#7A5C8C',
+  落叶松: '#4E8B5B',
+  河谷: '#4BA3C3',
   沙洲: '#A57845',
   长椅: '#6A624C',
-  毛毛虫: '#6F9862',
+  毛毛虫: '#4E8B5B',
   石头: '#74766F',
   云层: '#7D8492',
-  钓鱼人: '#4C8FA0',
-  帐篷: '#C98B4F',
+  钓鱼人: '#4BA3C3',
+  帐篷: '#D98C3A',
   薄云: '#9AA1A5',
-  霞光: '#C98B4F'
+  霞光: '#D98C3A'
 };
-const SANCTUARY_WORD_CLOUD_FALLBACK_COLORS = ['#4C8FA0', '#6F9862', '#5C5A6B', '#C98B4F', '#A36D8F'];
+const SANCTUARY_WORD_CLOUD_FALLBACK_COLORS = ['#4BA3C3', '#4E8B5B', '#4B4E6D', '#D98C3A', '#7A5C8C'];
 const SANCTUARY_BASE_COLORS: Record<string, string> = {
-  'base-1': '#4C8FA0',
-  'base-2': '#6F9862',
-  'base-3': '#5C5A6B',
-  'base-4': '#C98B4F',
-  'base-5': '#A36D8F'
+  'base-1': '#4BA3C3',
+  'base-2': '#4E8B5B',
+  'base-3': '#4B4E6D',
+  'base-4': '#D98C3A',
+  'base-5': '#7A5C8C'
 };
 
 type WordCloudWord = {
@@ -307,7 +307,7 @@ export default function NatureStats({
           isHockney
             ? 'hockney-card'
             : isSanctuary
-              ? 'sanctuary-card sanctuary-spectrum-card'
+              ? 'sanctuary-card sanctuary-calendar-card'
               : ''
         }`}
       >
@@ -389,7 +389,7 @@ export default function NatureStats({
           }`}
         >
           <h3 className="mb-4 flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
-            <span className={`rounded-md p-1 ${isSanctuary ? 'bg-[#EAF6E5] text-[#5D9C4A]' : 'bg-[#EEF4E8] text-[#2F5D4A]'}`}>
+            <span className={`rounded-md p-1 ${isSanctuary ? 'bg-[color-mix(in_srgb,#4E8B5B_12%,white)] text-[#4E8B5B]' : 'bg-[#EEF4E8] text-[#2F5D4A]'}`}>
               <Route className="h-4 w-4" />
             </span>
             散步日志纵览
@@ -442,17 +442,23 @@ export default function NatureStats({
                       aria-label={`${base.title} 相对访问频次 ${activeFootsteps}/${FOOTSTEP_LEVELS}`}
                     >
                       {Array.from({ length: FOOTSTEP_LEVELS }, (_, index) => (
-                        <span
+                        <Footprints
                           key={index}
                           aria-hidden="true"
-                          className={
-                            index < activeFootsteps
-                              ? 'text-[#2F6C49]'
-                              : 'text-[#BFD1B8]/55'
+                          className={`h-4 w-4 shrink-0 ${
+                            index < activeFootsteps ? 'text-[#2F6C49]' : 'text-[#BFD1B8]/55'
+                          }`}
+                          style={
+                            isSanctuary && baseColor
+                              ? {
+                                  color:
+                                    index < activeFootsteps
+                                      ? baseColor
+                                      : `color-mix(in srgb, ${baseColor} 16%, transparent)`
+                                }
+                              : undefined
                           }
-                        >
-                          {'👣\uFE0E'}
-                        </span>
+                        />
                       ))}
                     </div>
                     <span className="text-left text-xs font-medium text-[#4D6B50] sm:text-right">
@@ -479,7 +485,7 @@ export default function NatureStats({
           }`}
         >
           <h3 className="mb-4 flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
-            <span className={`rounded-md p-1 ${isSanctuary ? 'bg-[#F6E4F0] text-[#B46498]' : 'bg-[#F4F0E3] text-[#7A693A]'}`}>
+            <span className={`rounded-md p-1 ${isSanctuary ? 'bg-[color-mix(in_srgb,#7A5C8C_12%,white)] text-[#7A5C8C]' : 'bg-[#F4F0E3] text-[#7A693A]'}`}>
               <Leaf className="h-4 w-4" />
             </span>
             自然意象

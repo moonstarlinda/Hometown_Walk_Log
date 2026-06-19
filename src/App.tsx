@@ -51,34 +51,34 @@ type BasePalette = {
 
 const SANCTUARY_PALETTES: Record<string, BasePalette> = {
   'base-1': {
-    accent: '#4C8FA0',
-    soft: '#E3F6FA',
-    text: '#3A6F7D',
-    shadow: 'rgba(76,143,160,0.14)'
+    accent: '#4BA3C3',
+    soft: 'color-mix(in srgb, #4BA3C3 12%, white)',
+    text: '#4BA3C3',
+    shadow: 'rgba(75,163,195,0.12)'
   },
   'base-2': {
-    accent: '#6F9862',
-    soft: '#EAF6E5',
-    text: '#55784C',
-    shadow: 'rgba(111,152,98,0.14)'
+    accent: '#4E8B5B',
+    soft: 'color-mix(in srgb, #4E8B5B 12%, white)',
+    text: '#4E8B5B',
+    shadow: 'rgba(78,139,91,0.12)'
   },
   'base-3': {
-    accent: '#5C5A6B',
-    soft: '#EBEAF2',
-    text: '#464455',
-    shadow: 'rgba(92,90,107,0.16)'
+    accent: '#4B4E6D',
+    soft: 'color-mix(in srgb, #4B4E6D 12%, white)',
+    text: '#4B4E6D',
+    shadow: 'rgba(75,78,109,0.13)'
   },
   'base-4': {
-    accent: '#C98B4F',
-    soft: '#FBEAD8',
-    text: '#936236',
-    shadow: 'rgba(201,139,79,0.16)'
+    accent: '#D98C3A',
+    soft: 'color-mix(in srgb, #D98C3A 12%, white)',
+    text: '#D98C3A',
+    shadow: 'rgba(217,140,58,0.13)'
   },
   'base-5': {
-    accent: '#A36D8F',
-    soft: '#F6E4F0',
-    text: '#7A526C',
-    shadow: 'rgba(163,109,143,0.16)'
+    accent: '#7A5C8C',
+    soft: 'color-mix(in srgb, #7A5C8C 12%, white)',
+    text: '#7A5C8C',
+    shadow: 'rgba(122,92,140,0.13)'
   },
   [ROADSIDE_LOCATION_ID]: {
     accent: '#7A7F68',
@@ -119,7 +119,7 @@ const THEME_OPTIONS: Array<{
     title: 'Five Sanctuary 五基地色谱',
     icon: (
       <span className="inline-flex items-center gap-0.5" aria-hidden="true">
-        {['#1F7F96', '#3F7F3A', '#2A293B', '#D97824', '#9A4F82'].map((color) => (
+        {['#4BA3C3', '#4E8B5B', '#4B4E6D', '#D98C3A', '#7A5C8C'].map((color) => (
           <span
             key={color}
             className="h-1.5 w-1.5 rounded-full"
@@ -128,7 +128,7 @@ const THEME_OPTIONS: Array<{
         ))}
       </span>
     ),
-    swatches: ['#1F7F96', '#3F7F3A', '#2A293B', '#D97824', '#9A4F82']
+    swatches: ['#4BA3C3', '#4E8B5B', '#4B4E6D', '#D98C3A', '#7A5C8C']
   }
 ];
 const ROADSIDE_LOCATION: Base = {
@@ -563,7 +563,11 @@ export default function App() {
             </div>
           </div>
 
-          <nav className="flex gap-1 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] p-1 text-xs shadow-sm shadow-emerald-950/5">
+          <nav
+            className={`flex gap-1 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] p-1 text-xs shadow-sm shadow-emerald-950/5 ${
+              isSanctuary ? 'sanctuary-nav' : ''
+            }`}
+          >
             <TabButton
               active={activeTab === 'bases' && !selectedBaseId}
               icon={<MapIcon className="h-4 w-4" />}
@@ -789,7 +793,7 @@ export default function App() {
             title="回到顶部"
             aria-label="回到顶部"
             className={`fixed bottom-5 right-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] text-[#2F5D4A] shadow-lg shadow-emerald-950/10 transition-colors hover:bg-[#EEF4E8] sm:bottom-6 lg:right-[max(1rem,calc((100vw-72rem)/2-3.75rem))] ${
-              isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
+              isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-back-to-top' : ''
             }`}
             initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1083,8 +1087,7 @@ const BaseNoteCard: React.FC<{
       {isSanctuary && (
         <span
           aria-hidden="true"
-          className="block h-2.5 w-full"
-          style={{ backgroundColor: accent }}
+          className="sanctuary-card-strip block h-2.5 w-full"
         />
       )}
       <span
@@ -1100,7 +1103,10 @@ const BaseNoteCard: React.FC<{
         />
       </span>
       <span className="block p-4">
-        <span className="flex items-center gap-2 font-serif text-lg font-semibold text-[#243C32]">
+        <span
+          className="flex items-center gap-2 font-serif text-lg font-semibold text-[#243C32]"
+          style={isSanctuary ? { color: accent } : undefined}
+        >
           {isSanctuary && (
             <span
               aria-hidden="true"
@@ -1114,7 +1120,10 @@ const BaseNoteCard: React.FC<{
           {summary}
         </span>
         {latestLog && (
-          <span className="mt-3 block text-xs text-[#7D8C74]">
+          <span
+            className="mt-3 block text-xs text-[#7D8C74]"
+            style={isSanctuary ? { color: accent } : undefined}
+          >
             最近访问：{formatDate(latestLog.date)}
           </span>
         )}
@@ -1203,7 +1212,20 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-1.5 text-xs font-medium text-[#5B7055] transition-colors hover:bg-[#EEF4E8] hover:text-[#2F5D4A]"
+        className={`relative z-10 inline-flex items-center gap-1.5 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-1.5 text-xs font-medium text-[#5B7055] transition-colors hover:bg-[#EEF4E8] hover:text-[#2F5D4A] ${
+          isSanctuary ? 'sanctuary-back-button' : ''
+        }`}
+        style={
+          isSanctuary && palette
+            ? ({
+                '--sanctuary-accent': palette.accent,
+                '--sanctuary-soft': palette.soft,
+                '--sanctuary-shadow': palette.shadow,
+                color: palette.text,
+                borderColor: `color-mix(in srgb, ${palette.accent} 15%, transparent)`
+              } as React.CSSProperties)
+            : undefined
+        }
       >
         <ArrowLeft className="h-4 w-4" />
         返回首页
@@ -1219,7 +1241,7 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
                 '--sanctuary-accent': palette.accent,
                 '--sanctuary-soft': palette.soft,
                 '--sanctuary-shadow': palette.shadow,
-                borderColor: palette.accent
+                borderColor: `color-mix(in srgb, ${palette.accent} 15%, transparent)`
               } as React.CSSProperties)
             : undefined
         }
@@ -1235,7 +1257,10 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
             <div>
               <div>
                 <p className="text-xs text-[#7D8C74]">{base.subtitle}</p>
-                <h1 className="mt-0.5 flex items-center gap-2 font-serif text-2xl font-semibold text-[#243C32] sm:text-3xl">
+                <h1
+                  className="mt-0.5 flex items-center gap-2 font-serif text-2xl font-semibold text-[#243C32] sm:text-3xl"
+                  style={isSanctuary ? { color: accent } : undefined}
+                >
                   {isSanctuary && (
                     <span
                       aria-hidden="true"
@@ -1259,7 +1284,12 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
       </div>
 
       <div className="space-y-2">
-        <h2 className="font-serif text-xl font-semibold text-[#243C32]">这个地点的记录</h2>
+        <h2
+          className="font-serif text-xl font-semibold text-[#243C32]"
+          style={isSanctuary ? { color: accent } : undefined}
+        >
+          这个地点的记录
+        </h2>
         {isSanctuary && (
           <span aria-hidden="true" className="block h-1 w-16 rounded-full" style={{ backgroundColor: accent }} />
         )}
@@ -1337,7 +1367,7 @@ const LogCard: React.FC<LogCardProps> = ({
     <div className="relative" ref={actionsRef}>
       <article
         className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-4 pr-12 shadow-sm shadow-emerald-950/5 xl:pr-4 ${
-          isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
+          isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-log-card' : ''
         }`}
         style={
           isSanctuary && palette
@@ -1363,13 +1393,16 @@ const LogCard: React.FC<LogCardProps> = ({
             <button
               type="button"
               onClick={onOpenBase}
-              className="rounded-md bg-[#EEF4E8] px-2 py-1 text-[#4D6B50] transition-colors hover:bg-[#E1ECD9]"
+              className={`rounded-md bg-[#EEF4E8] px-2 py-1 text-[#4D6B50] transition-colors hover:bg-[#E1ECD9] ${
+                isSanctuary ? 'sanctuary-base-tag' : ''
+              }`}
               style={
                 isSanctuary && palette
                   ? {
+                      '--sanctuary-accent': palette.accent,
                       backgroundColor: palette.soft,
                       color: palette.text
-                    }
+                    } as React.CSSProperties
                   : undefined
               }
             >
@@ -1386,7 +1419,16 @@ const LogCard: React.FC<LogCardProps> = ({
         {log.tags.map((tag) => (
           <span
             key={tag}
-            className="rounded-md bg-[#EEF4E8] px-2 py-1 text-xs text-[#5B7055]"
+            className="rounded-md border border-transparent bg-[#EEF4E8] px-2 py-1 text-xs text-[#5B7055]"
+            style={
+              isSanctuary && palette
+                ? {
+                    backgroundColor: `color-mix(in srgb, ${palette.accent} 8%, white)`,
+                    borderColor: `color-mix(in srgb, ${palette.accent} 20%, transparent)`,
+                    color: palette.text
+                  }
+                : undefined
+            }
           >
             #{tag}
           </span>

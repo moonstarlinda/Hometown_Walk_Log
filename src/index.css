@@ -80,16 +80,19 @@ html {
 
 .sanctuary-root::before {
   z-index: 0;
-  opacity: 0.18;
+  opacity: 0.22;
   background:
-    radial-gradient(circle at 18% 12%, rgba(91, 128, 103, 0.28), transparent 24%),
-    radial-gradient(circle at 82% 18%, rgba(143, 128, 102, 0.22), transparent 26%),
-    radial-gradient(circle at 54% 84%, rgba(84, 116, 130, 0.18), transparent 28%);
-  filter: blur(34px);
+    radial-gradient(circle at 12% 18%, rgba(75, 163, 195, 0.26), transparent 24%),
+    radial-gradient(circle at 32% 9%, rgba(78, 139, 91, 0.22), transparent 23%),
+    radial-gradient(circle at 55% 14%, rgba(75, 78, 109, 0.16), transparent 25%),
+    radial-gradient(circle at 78% 12%, rgba(217, 140, 58, 0.18), transparent 24%),
+    radial-gradient(circle at 94% 22%, rgba(122, 92, 140, 0.2), transparent 26%),
+    radial-gradient(circle at 50% 88%, rgba(75, 163, 195, 0.14), transparent 30%);
+  filter: blur(42px);
 }
 
 .sanctuary-root::after {
-  z-index: 2;
+  z-index: 0;
   opacity: 0.16;
   background:
     radial-gradient(circle at center, transparent 58%, rgba(51, 45, 38, 0.16) 100%),
@@ -98,9 +101,14 @@ html {
   mix-blend-mode: multiply;
 }
 
-.sanctuary-root > * {
+.sanctuary-root > main,
+.sanctuary-root > footer {
   position: relative;
   z-index: 1;
+}
+
+.sanctuary-root > header {
+  z-index: 70;
 }
 
 .sanctuary-header {
@@ -108,7 +116,32 @@ html {
   background: rgba(249, 246, 235, 0.94);
 }
 
+.sanctuary-nav {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(150, 141, 118, 0.3);
+  background: rgba(255, 253, 246, 0.9);
+}
+
+.sanctuary-nav::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    #4ba3c3 0 20%,
+    #4e8b5b 20% 40%,
+    #4b4e6d 40% 60%,
+    #d98c3a 60% 80%,
+    #7a5c8c 80% 100%
+  );
+  opacity: 0.72;
+}
+
 .sanctuary-card {
+  position: relative;
+  overflow: hidden;
   border-radius: 12px;
   border-color: rgba(150, 141, 118, 0.28);
   background: rgba(255, 253, 246, 0.86);
@@ -120,20 +153,93 @@ html {
   transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
 }
 
+.sanctuary-card::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: var(--sanctuary-climate-width, 64%);
+  height: var(--sanctuary-climate-height, 48%);
+  pointer-events: none;
+  background: radial-gradient(
+    circle at top left,
+    color-mix(in srgb, var(--sanctuary-accent, #8f8066) 8%, transparent),
+    transparent 70%
+  );
+}
+
 .sanctuary-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(132, 121, 96, 0.42);
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--sanctuary-accent, #8f8066) 15%, rgba(132, 121, 96, 0.42));
   box-shadow:
-    0 16px 38px rgba(71, 61, 44, 0.11),
+    0 12px 30px rgba(71, 61, 44, 0.1),
     0 1px 0 rgba(255, 255, 255, 0.78) inset;
 }
 
+.sanctuary-card:hover::after {
+  background: radial-gradient(
+    circle at top left,
+    color-mix(in srgb, var(--sanctuary-accent, #8f8066) 10%, transparent),
+    transparent 70%
+  );
+}
+
+.sanctuary-back-button {
+  border-color: color-mix(in srgb, var(--sanctuary-accent, #8f8066) 18%, rgba(150, 141, 118, 0.28));
+  background: rgba(255, 253, 246, 0.94);
+  color: var(--sanctuary-accent, #8f8066);
+  box-shadow: 0 6px 16px rgba(71, 61, 44, 0.08);
+}
+
+.sanctuary-back-button:hover {
+  background: color-mix(in srgb, var(--sanctuary-accent, #8f8066) 10%, white);
+  color: var(--sanctuary-accent, #8f8066);
+}
+
+.sanctuary-back-to-top {
+  position: fixed;
+  z-index: 90;
+}
+
 .sanctuary-map-card {
+  --sanctuary-accent: #8f8066;
   border-color: rgba(129, 119, 94, 0.36);
   background: rgba(255, 253, 246, 0.94);
   box-shadow:
     0 18px 48px rgba(72, 62, 45, 0.13),
     0 1px 0 rgba(255, 255, 255, 0.78) inset;
+}
+
+.sanctuary-log-card {
+  --sanctuary-climate-width: 52%;
+  --sanctuary-climate-height: 42%;
+  border-left-width: 6px;
+  border-left-color: var(--sanctuary-accent, #8f8066);
+}
+
+.sanctuary-log-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: var(--sanctuary-accent, #8f8066);
+}
+
+.sanctuary-base-tag {
+  border: 1px solid color-mix(in srgb, var(--sanctuary-accent, #8f8066) 28%, transparent);
+  box-shadow: 3px 0 0 var(--sanctuary-accent, #8f8066) inset;
+}
+
+.sanctuary-card-strip {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.38), transparent 58%),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--sanctuary-accent, #8f8066) 42%, white),
+      color-mix(in srgb, var(--sanctuary-accent, #8f8066) 66%, white) 42%,
+      color-mix(in srgb, var(--sanctuary-accent, #8f8066) 38%, white)
+    );
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.52) inset;
+  opacity: 0.88;
 }
 
 .sanctuary-image-frame {
@@ -154,9 +260,35 @@ html {
 
 .sanctuary-map-surface {
   background:
-    radial-gradient(circle, rgba(89, 82, 67, 0.11) 0 0.45px, transparent 0.65px),
+    radial-gradient(circle at 20% 38%, rgba(75, 163, 195, 0.2), transparent 23%),
+    radial-gradient(circle at 36% 34%, rgba(78, 139, 91, 0.17), transparent 24%),
+    radial-gradient(circle at 54% 34%, rgba(75, 78, 109, 0.12), transparent 23%),
+    radial-gradient(circle at 70% 42%, rgba(217, 140, 58, 0.14), transparent 24%),
+    radial-gradient(circle at 86% 34%, rgba(122, 92, 140, 0.15), transparent 25%),
+    linear-gradient(180deg, rgba(255, 253, 246, 0.88), rgba(246, 242, 229, 0.92)),
+    radial-gradient(circle, rgba(89, 82, 67, 0.1) 0 0.45px, transparent 0.65px),
     #fbf8ee;
-  background-size: auto, auto, 12px 12px;
+  background-blend-mode: multiply, multiply, multiply, multiply, multiply, normal, normal, normal;
+  background-size: auto, auto, auto, auto, auto, auto, 12px 12px, auto;
+}
+
+.sanctuary-calendar-card {
+  --sanctuary-accent: #8f8066;
+  --sanctuary-soft: #fff8ea;
+  --sanctuary-shadow: rgba(107, 78, 45, 0.12);
+  background:
+    radial-gradient(circle at 14% 18%, rgba(75, 163, 195, 0.12), transparent 26%),
+    radial-gradient(circle at 34% 10%, rgba(78, 139, 91, 0.1), transparent 24%),
+    radial-gradient(circle at 55% 16%, rgba(75, 78, 109, 0.08), transparent 25%),
+    radial-gradient(circle at 75% 12%, rgba(217, 140, 58, 0.09), transparent 24%),
+    radial-gradient(circle at 92% 20%, rgba(122, 92, 140, 0.1), transparent 25%),
+    rgba(255, 253, 246, 0.9);
+  background-blend-mode: multiply, multiply, multiply, multiply, multiply, normal;
+}
+
+.sanctuary-map-card::after,
+.sanctuary-calendar-card::after {
+  content: none;
 }
 
 .sanctuary-spectrum-card {
@@ -172,7 +304,15 @@ html {
 }
 
 .sanctuary-metric-card {
-  --sanctuary-accent: #5d9c4a;
+  --sanctuary-accent: #4e8b5b;
   --sanctuary-soft: #f8f3e8;
-  --sanctuary-shadow: rgba(93, 156, 74, 0.12);
+  --sanctuary-shadow: rgba(78, 139, 91, 0.12);
+}
+
+.map-hover-card {
+  position: absolute;
+}
+
+.map-hover-card:hover {
+  transform: none;
 }
