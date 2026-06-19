@@ -6,6 +6,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
+  ArrowUp,
   BarChart3,
   BookOpen,
   Calendar,
@@ -14,7 +15,7 @@ import {
   CloudRain,
   Compass,
   Filter,
-  Map,
+  Map as MapIcon,
   MapPin,
   MoreHorizontal,
   Pencil,
@@ -48,6 +49,61 @@ const ROADSIDE_LOCATION: Base = {
   coverImage: openingWalkingIntoForest
 };
 
+function parseSavedItems(savedValue: string | null) {
+  if (!savedValue) return null;
+
+  try {
+    const parsed = JSON.parse(savedValue);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeSavedBases(savedItems: unknown[] | null): Base[] | null {
+  if (!savedItems) return null;
+
+  return savedItems
+    .filter((item): item is Partial<Base> => Boolean(item && typeof item === 'object'))
+    .filter((item) => typeof item.id === 'string')
+    .map((item) => ({
+      id: item.id ?? '',
+      title: item.title ?? '未命名地点',
+      subtitle: item.subtitle ?? '',
+      description: item.description ?? '',
+      location: item.location ?? '',
+      coverImage: item.coverImage ?? openingWalkingIntoForest
+    }));
+}
+
+function normalizeSavedLogs(savedItems: unknown[] | null): WalkLog[] | null {
+  if (!savedItems) return null;
+
+  return savedItems
+    .filter((item): item is Partial<WalkLog> => Boolean(item && typeof item === 'object'))
+    .filter((item) => typeof item.id === 'string' && typeof item.baseId === 'string')
+    .map((item) => ({
+      id: item.id ?? '',
+      baseId: item.baseId ?? '',
+      date: item.date ?? '',
+      weather: item.weather ?? 'sunny',
+      weatherText: item.weatherText ?? '',
+      tags: Array.isArray(item.tags) ? item.tags.filter((tag) => typeof tag === 'string') : [],
+      photos: Array.isArray(item.photos)
+        ? item.photos.filter((photo) => typeof photo === 'string')
+        : undefined,
+      content: item.content ?? ''
+    })) as WalkLog[];
+}
+
+function mergeInitialItems<T extends { id: string }>(savedItems: T[], initialItems: T[]) {
+  const initialById = new Map(initialItems.map((item) => [item.id, item]));
+  const savedIds = new Set(savedItems.map((item) => item.id));
+  const refreshedSavedItems = savedItems.map((item) => initialById.get(item.id) ?? item);
+  const missingInitialItems = initialItems.filter((item) => !savedIds.has(item.id));
+  return [...refreshedSavedItems, ...missingInitialItems];
+}
+
 export default function App() {
   const prefersReducedMotion = useReducedMotion();
   const [bases, setBases] = useState<Base[]>([]);
@@ -62,14 +118,18 @@ export default function App() {
   const [filterDate, setFilterDate] = useState('');
   const [filterBaseId, setFilterBaseId] = useState('all');
   const [filterWeather, setFilterWeather] = useState('all');
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
-    const savedBases = localStorage.getItem(BASES_STORAGE_KEY);
-    const savedLogs = localStorage.getItem(LOGS_STORAGE_KEY);
+    const savedBases = normalizeSavedBases(parseSavedItems(localStorage.getItem(BASES_STORAGE_KEY)));
+    const savedLogs = normalizeSavedLogs(parseSavedItems(localStorage.getItem(LOGS_STORAGE_KEY)));
 
     if (savedBases && savedLogs) {
-      setBases(JSON.parse(savedBases));
-      setLogs(JSON.parse(savedLogs));
+      const nextBases = mergeInitialItems(savedBases, INITIAL_BASES);
+      const nextLogs = mergeInitialItems(savedLogs, INITIAL_LOGS);
+      setBases(nextBases);
+      setLogs(nextLogs);
+      saveStateToStorage(nextBases, nextLogs);
       return;
     }
 
@@ -130,13 +190,13 @@ export default function App() {
   }, [selectedBaseId, sortedLogs]);
 
   const latestLogPerBase = useMemo(() => {
-    const latest: Record<string, string | null> = {};
+    const latest: Record<string, WalkLog | undefined> = {};
     bases.forEach((base) => {
-      latest[base.id] =
-        sortedLogs.find((log) => log.baseId === base.id)?.content ?? null;
+      latest[base.id] = sortedLogs.find((log) => log.baseId === base.id);
     });
-    latest[ROADSIDE_LOCATION_ID] =
-      sortedLogs.find((log) => log.baseId === ROADSIDE_LOCATION_ID)?.content ?? null;
+    latest[ROADSIDE_LOCATION_ID] = sortedLogs.find(
+      (log) => log.baseId === ROADSIDE_LOCATION_ID
+    );
     return latest;
   }, [bases, sortedLogs]);
 
@@ -241,6 +301,27 @@ export default function App() {
   };
 
   const showHome = activeTab === 'bases' && !selectedBaseId;
+  const showBackToTopControl = activeTab === 'timeline' || Boolean(activeBaseDetails);
+
+  useEffect(() => {
+    if (!showBackToTopControl) {
+      setShowBackToTop(false);
+      return;
+    }
+
+    const updateBackToTop = () => setShowBackToTop(window.scrollY > 360);
+    updateBackToTop();
+    window.addEventListener('scroll', updateBackToTop, { passive: true });
+
+    return () => window.removeEventListener('scroll', updateBackToTop);
+  }, [showBackToTopControl]);
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: prefersReducedMotion ? 'auto' : 'smooth'
+    });
+  }, [prefersReducedMotion]);
 
   return (
     <div className="min-h-screen bg-[#F5F4EC] text-stone-800 antialiased">
@@ -283,7 +364,7 @@ export default function App() {
           <nav className="flex gap-1 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] p-1 text-xs shadow-sm shadow-emerald-950/5">
             <TabButton
               active={activeTab === 'bases' && !selectedBaseId}
-              icon={<Map className="h-4 w-4" />}
+              icon={<MapIcon className="h-4 w-4" />}
               label="首页"
               onClick={() => {
                 setSelectedBaseId(null);
@@ -350,7 +431,7 @@ export default function App() {
             <section className="space-y-3">
               <SectionHeading
                 title="基地卡片"
-                description="每张卡片保留地点封面，文字显示最新记录。点击查看该基地的所有日志。"
+                description="每张卡片展示该基地的最新记录和照片。点击查看该基地的所有日志。"
               />
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -358,15 +439,13 @@ export default function App() {
                   <BaseNoteCard
                     key={base.id}
                     base={base}
-                    latestText={latestLogPerBase[base.id] ?? base.description}
+                    latestLog={latestLogPerBase[base.id]}
                     onClick={() => setSelectedBaseId(base.id)}
                   />
                 ))}
                 <BaseNoteCard
                   base={ROADSIDE_LOCATION}
-                  latestText={
-                    latestLogPerBase[ROADSIDE_LOCATION_ID] ?? ROADSIDE_LOCATION.description
-                  }
+                  latestLog={latestLogPerBase[ROADSIDE_LOCATION_ID]}
                   onClick={() => setSelectedBaseId(ROADSIDE_LOCATION_ID)}
                 />
               </div>
@@ -479,6 +558,24 @@ export default function App() {
       <footer className="mx-auto max-w-6xl px-4 pb-8 pt-4 text-xs text-[#7D8C74] sm:px-6 lg:px-8">
         2026 散步笔记
       </footer>
+
+      <AnimatePresence>
+        {showBackToTopControl && showBackToTop && (
+          <motion.button
+            type="button"
+            onClick={scrollToTop}
+            title="回到顶部"
+            aria-label="回到顶部"
+            className="fixed bottom-5 right-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] text-[#2F5D4A] shadow-lg shadow-emerald-950/10 transition-colors hover:bg-[#EEF4E8] sm:bottom-6 lg:right-[max(1rem,calc((100vw-72rem)/2-3.75rem))]"
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+          >
+            <ArrowUp className="h-5 w-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showAddLog && (
@@ -726,9 +823,14 @@ const AuthorTools: React.FC<{
 
 const BaseNoteCard: React.FC<{
   base: Base;
-  latestText: string;
+  latestLog?: WalkLog;
   onClick: () => void;
-}> = ({ base, latestText, onClick }) => {
+}> = ({ base, latestLog, onClick }) => {
+  const cardImage = latestLog?.photos?.filter(Boolean)[0] ?? base.coverImage;
+  const summary = latestLog?.content
+    ? `“${shortText(latestLog.content, 42)}”`
+    : shortText(base.description, 48);
+
   return (
     <button
       type="button"
@@ -736,7 +838,7 @@ const BaseNoteCard: React.FC<{
       className="group flex h-full w-full flex-col overflow-hidden rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] text-left shadow-sm shadow-emerald-950/5 transition-colors hover:border-[#BFD1B8] hover:bg-[#F9FAF2]"
     >
       <img
-        src={base.coverImage}
+        src={cardImage}
         alt={base.title}
         referrerPolicy="no-referrer"
         className="block h-40 w-full flex-none object-cover object-center align-top transition-transform duration-500 group-hover:scale-[1.03]"
@@ -746,8 +848,13 @@ const BaseNoteCard: React.FC<{
           {base.title}
         </span>
         <span className="mt-2 block text-sm leading-6 text-[#66745E]">
-          {shortText(latestText || base.description)}
+          {summary}
         </span>
+        {latestLog && (
+          <span className="mt-3 block text-xs text-[#7D8C74]">
+            最近访问：{formatDate(latestLog.date)}
+          </span>
+        )}
       </span>
     </button>
   );
@@ -781,6 +888,22 @@ const RecentObservation: React.FC<{
   );
 };
 
+const BaseDetailCover: React.FC<{
+  src: string;
+  alt: string;
+}> = ({ src, alt }) => {
+  return (
+    <figure className="h-44 w-full self-start overflow-hidden bg-[#F4F7ED] md:h-64 md:max-h-64">
+      <img
+        src={src}
+        alt={alt}
+        referrerPolicy="no-referrer"
+        className="h-full w-full object-cover"
+      />
+    </figure>
+  );
+};
+
 interface BaseDetailProps {
   base: Base;
   logs: WalkLog[];
@@ -799,45 +922,40 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
   onDeleteLog
 }) => {
   return (
-    <section className="space-y-5">
+    <section className="space-y-3">
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#5B7055] transition-colors hover:bg-[#EEF4E8] hover:text-[#2F5D4A]"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-1.5 text-xs font-medium text-[#5B7055] transition-colors hover:bg-[#EEF4E8] hover:text-[#2F5D4A]"
       >
         <ArrowLeft className="h-4 w-4" />
         返回首页
       </button>
 
       <div className="overflow-hidden rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] shadow-sm shadow-emerald-950/5">
-        <div className="grid md:grid-cols-[320px_1fr]">
-          <img
-            src={base.coverImage}
-            alt={base.title}
-            referrerPolicy="no-referrer"
-            className="h-64 w-full object-cover md:h-full"
-          />
-          <div className="p-5 sm:p-6">
+        <div className="grid items-start md:grid-cols-[300px_1fr]">
+          <BaseDetailCover src={base.coverImage} alt={base.title} />
+          <div className="p-4 sm:p-5">
             <div>
               <div>
                 <p className="text-xs text-[#7D8C74]">{base.subtitle}</p>
-                <h1 className="mt-1 font-serif text-3xl font-semibold text-[#243C32]">
+                <h1 className="mt-0.5 font-serif text-2xl font-semibold text-[#243C32] sm:text-3xl">
                   {base.title}
                 </h1>
               </div>
             </div>
-            <p className="mt-4 flex items-center gap-1.5 text-xs text-[#6B7E65]">
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-[#6B7E65]">
               <MapPin className="h-4 w-4" />
               {base.location}
             </p>
-            <p className="mt-5 font-serif text-base leading-8 text-stone-800">
+            <p className="mt-3 font-serif text-sm leading-6 text-stone-800 sm:text-base sm:leading-7">
               {base.description}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         <h2 className="font-serif text-xl font-semibold text-[#243C32]">这个地点的记录</h2>
         {logs.length === 0 ? (
           <div className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-8 text-center text-sm text-[#6B7E65]">

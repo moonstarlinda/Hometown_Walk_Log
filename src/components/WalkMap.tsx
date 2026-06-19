@@ -5,13 +5,13 @@
 
 import React, { useState } from 'react';
 import { ArrowRight, MapPin } from 'lucide-react';
-import { Base } from '../types';
+import { Base, WalkLog } from '../types';
 
 interface WalkMapProps {
   bases: Base[];
   selectedBaseId: string | null;
   onSelectBase: (id: string) => void;
-  latestLogPerBase: Record<string, string | null>;
+  latestLogPerBase: Record<string, WalkLog | undefined>;
 }
 
 export default function WalkMap({
@@ -43,6 +43,14 @@ export default function WalkMap({
   const hoveredBase = hoveredBaseId
     ? bases.find((base) => base.id === hoveredBaseId)
     : null;
+  const hoveredLatestLog = hoveredBase ? latestLogPerBase[hoveredBase.id] : undefined;
+
+  const formatDate = (date: string) => date.replace(/-/g, '.');
+
+  const shortText = (text: string, maxLength = 42) => {
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, maxLength)}...`;
+  };
 
   return (
     <section className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-3 shadow-sm shadow-emerald-950/5">
@@ -144,8 +152,16 @@ export default function WalkMap({
               {hoveredBase.title}
             </div>
             <p className="line-clamp-2 text-xs leading-5 text-[#66745E]">
-              {latestLogPerBase[hoveredBase.id] || hoveredBase.location}
+              {shortText(hoveredBase.location, 24)}
             </p>
+            {hoveredLatestLog && (
+              <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-stone-700">
+                <span className="font-mono text-[#5F7D58]">
+                  {formatDate(hoveredLatestLog.date)}
+                </span>
+                ：{shortText(hoveredLatestLog.content)}
+              </p>
+            )}
             <span className="mt-2 inline-flex items-center gap-1 text-xs text-[#5F7D58]">
               点击查看 <ArrowRight className="h-3 w-3" />
             </span>

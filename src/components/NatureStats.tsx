@@ -4,7 +4,7 @@
  */
 
 import { WalkLog, Base } from '../types';
-import { Calendar, CloudSun, Compass, Heart, Leaf } from 'lucide-react';
+import { Calendar, CloudSun, Heart, Leaf, Route } from 'lucide-react';
 
 interface NatureStatsProps {
   logs: WalkLog[];
@@ -37,14 +37,53 @@ function activityClass(count: number) {
   return 'bg-[#2F7A4F] border-[#2F6C49]';
 }
 
-// Generate random position within bounds with better distribution
-function randomPosition(maxX: number, maxY: number, index: number) {
-  const xSeed = (index * 7919 + 137) % 10000;
-  const ySeed = (index * 6271 + 97) % 10000;
-  const x = (xSeed / 10000) * maxX + 20;
-  const y = (ySeed / 10000) * maxY + 20;
-  return { x: Math.min(x, maxX + 20), y: Math.min(y, maxY + 20) };
-}
+const IMPORTANT_WORD_POSITIONS = [
+  { x: 88, y: 52 },
+  { x: 232, y: 52 },
+  { x: 76, y: 132 },
+  { x: 232, y: 132 },
+  { x: 160, y: 34 }
+];
+
+const SECONDARY_WORD_POSITIONS = [
+  { x: 44, y: 88 },
+  { x: 276, y: 88 },
+  { x: 118, y: 154 },
+  { x: 204, y: 154 },
+  { x: 46, y: 30 },
+  { x: 278, y: 150 }
+];
+
+const WORD_CLOUD_COLORS: Record<string, string> = {
+  河水: '#2F7890',
+  黑猫: '#2E332D',
+  鸢尾花: '#75609B',
+  水文站: '#AFAF9E',
+  鸭子: '#627A42',
+  松树: '#2F5D4A',
+  丁香花: '#8A6FA3',
+  落叶松: '#6F7F4B',
+  河谷: '#4D8390',
+  沙洲: '#8B7A56',
+  长椅: '#766B4F',
+  毛毛虫: '#5E7D45',
+  石头: '#7E8B78',
+  云层: '#6E8E8C',
+  钓鱼人: '#5B7055',
+  帐篷: '#8A7B5A',
+  薄云: '#8EA39A',
+  霞光: '#9A7052'
+};
+
+const WORD_CLOUD_FALLBACK_COLORS = ['#2F5D4A', '#4D8390', '#7A693A', '#6B7E65', '#5B7055'];
+
+type WordCloudWord = {
+  word: string;
+  count: number;
+  tier: 'core' | 'important' | 'secondary';
+  x: number;
+  y: number;
+};
 
 // Generate random rotation between -10 and 10 degrees
 function randomRotation(index: number) {
@@ -112,8 +151,38 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
   });
 
   const sortedWords = Object.entries(wordCounts).sort((a, b) => b[1] - a[1]);
-  const topWords = sortedWords.slice(0, 12);
-  const maxWordCount = topWords[0]?.[1] ?? 1;
+  const wordWhitelist = new Set(natureConcepts.map(({ label }) => label));
+  const eligibleWords = sortedWords.filter(
+    ([word]) => word.length >= 2 && wordWhitelist.has(word)
+  );
+  const coreWord = wordCounts['河水']
+    ? ([['河水', wordCounts['河水']]] as Array<[string, number]>)
+    : [];
+  const surroundingWords = eligibleWords.filter(([word]) => word !== '河水');
+  const importantWords = surroundingWords.slice(0, 5);
+  const secondaryWords = surroundingWords.slice(5, 11);
+  const wordCloudWords: WordCloudWord[] = [
+    ...coreWord.map(([word, count]) => ({
+      word,
+      count,
+      tier: 'core' as const,
+      x: 160,
+      y: 92
+    })),
+    ...importantWords.map(([word, count], index) => ({
+      word,
+      count,
+      tier: 'important' as const,
+      ...IMPORTANT_WORD_POSITIONS[index]
+    })),
+    ...secondaryWords.map(([word, count], index) => ({
+      word,
+      count,
+      tier: 'secondary' as const,
+      ...SECONDARY_WORD_POSITIONS[index]
+    }))
+  ].slice(0, 12);
+  const maxWordCount = Math.max(wordCounts['河水'] ?? 1, wordCloudWords[0]?.count ?? 1);
 
   const weatherLabels: Record<string, { label: string; color: string }> = {
     sunny: { label: '晴天', color: '#d97706' },
@@ -249,7 +318,7 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
         <section className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5">
           <h3 className="mb-4 flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
             <span className="rounded-md bg-[#EEF4E8] p-1 text-[#2F5D4A]">
-              <Compass className="h-4 w-4" />
+              <Route className="h-4 w-4" />
             </span>
             散步日志纵览
           </h3>
@@ -333,7 +402,7 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
           </h3>
 
           <div className="relative h-58 overflow-hidden rounded-lg border border-[#E5E1D6] bg-[#FAF9F1]">
-            {topWords.length > 0 ? (
+            {wordCloudWords.length > 0 ? (
               <svg viewBox="0 0 320 180" className="w-full h-full">
                 <defs>
                   <clipPath id="wordCloudClip">
@@ -341,24 +410,30 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
                   </clipPath>
                 </defs>
                 <g clipPath="url(#wordCloudClip)">
-                  {topWords.map(([word, count], index) => {
-                    const ratio = count / maxWordCount;
-                    const fontSize = 14 + ratio * 16;
-                    const colors = ['#2F5D4A', '#4D8390', '#7A693A', '#6B7E65', '#5B7055'];
-                    const pos = randomPosition(260, 140, index);
-                    const rotation = randomRotation(index);
+                  {wordCloudWords.map(({ word, count, tier, x, y }, index) => {
+                    const ratio = Math.min(1, count / maxWordCount);
+                    const fontSize =
+                      tier === 'core'
+                        ? 34
+                        : tier === 'important'
+                          ? 18 + ratio * 6
+                          : 13 + ratio * 4;
+                    const color =
+                      WORD_CLOUD_COLORS[word] ??
+                      WORD_CLOUD_FALLBACK_COLORS[index % WORD_CLOUD_FALLBACK_COLORS.length];
+                    const rotation = tier === 'core' ? 0 : randomRotation(index);
 
                     return (
                       <text
                         key={word}
-                        x={pos.x}
-                        y={pos.y}
+                        x={x}
+                        y={y}
                         fontSize={fontSize}
                         fontFamily="serif"
                         fontWeight="600"
-                        fill={colors[index % colors.length]}
-                        opacity={0.65 + ratio * 0.35}
-                        transform={`rotate(${rotation}, ${pos.x}, ${pos.y})`}
+                        fill={color}
+                        opacity={tier === 'core' ? 1 : 0.68 + ratio * 0.28}
+                        transform={`rotate(${rotation}, ${x}, ${y})`}
                         textAnchor="middle"
                         dominantBaseline="middle"
                         title={`"${word}": 出现 ${count} 次`}
