@@ -12,7 +12,7 @@ export const INITIAL_BASES: Base[] = [
     subtitle: 'Riverbank Shallows (North)',
     description: '位于河流北侧，大河边缘顺着弯道冲刷出的小沙石头沙滩。河中不远有一处小沙洲，偶有绿头鸭驻留。',
     location: '河流北侧散步道 1.2k 处，老柳树下方坡道',
-    coverImage: '/src/assets/images/base_1.jpg'
+    coverImage: '/images/base_1.jpg'
   },
   {
     id: 'base-2',
@@ -20,7 +20,7 @@ export const INITIAL_BASES: Base[] = [
     subtitle: 'Pine Row Bench (North)',
     description: '位于河流北侧高地上。陈旧的松木长椅静置于松针林荫道旁，背后是一排高耸挺拔的翠绿松树，迎面直对北侧山峰，树木将天空围绕成一块不规则区域，是一处绝佳的静坐看云据点。',
     location: '河流北侧森林步道，松针碎石路高坡旁',
-    coverImage: '/src/assets/images/base_2.jpg'
+    coverImage: '/images/base_2.jpg'
   },
   {
     id: 'base-3',
@@ -28,7 +28,7 @@ export const INITIAL_BASES: Base[] = [
     subtitle: 'Embankment Steps (North)',
     description: '位于河流北侧，防汛水泥大堤上斜插向河水面的水泥石台阶。这里视野开阔，适合黄昏时分漫步至此，坐着看夕阳渐渐沉入西方河谷尽头。',
     location: '河流北侧防汛大堤主段，日落观景台阶',
-    coverImage: '/src/assets/images/base_3.jpg'
+    coverImage: '/images/base_3.jpg'
   },
   {
     id: 'base-4',
@@ -36,7 +36,7 @@ export const INITIAL_BASES: Base[] = [
     subtitle: 'Hydrological Station (South)',
     description: '位于河流南侧的水文测报站。静谧的观测小房矗立河畔，沿着堤坝修筑着一排垂直的水位标尺与一人宽水泥台阶。',
     location: '河流南侧堤坝中段，水文观测浮标旁',
-    coverImage: '/src/assets/images/base_4.jpg'
+    coverImage: '/images/base_4.jpg'
   },
   {
     id: 'base-5',
@@ -44,7 +44,7 @@ export const INITIAL_BASES: Base[] = [
     subtitle: 'Bridge Pier Valley Park (West)',
     description: '位于河流西南侧，是一处视野辽阔的河谷草甸。一条质朴的石板游步道在连绵的绿色草海间蜿蜒，地里开满了星星点点的紫色野鸢尾。远方矗立着高而长的公路大桥，桥下的草地上星罗棋布地扎着几顶清雅的白色张拉膜天幕营地，两旁山峦翠绿，十分空灵。',
     location: '河流西侧，公路大桥下方湿地石板游步道',
-    coverImage: '/src/assets/images/base_5.jpg'
+    coverImage: '/images/base_5.jpg'
   }
 ];
 
@@ -67,7 +67,7 @@ export const INITIAL_LOGS: WalkLog[] = [
     weatherText: '阴天 · 云速中等',
     tags: ['绿头鸭初现', '午夜巴黎爵士', '悬丝毛毛虫'],
     photos: [
-      '/src/assets/images/base_1_2026_06_07.jpg'
+      '/images/base_1_2026_06_07.jpg'
     ],
     content: '水面中央的黄色塑料袋换成了小鸭子🦆 对岸钓鱼人只剩一个。BGM是《午夜巴黎》的Sidney Bechet单簧管。回家的路上看到一条悬丝的绿色毛毛虫，蹲着看了好一会儿。'
   },
@@ -115,7 +115,7 @@ export const INITIAL_LOGS: WalkLog[] = [
     weatherText: '阴天/多云',
     tags: ['玩水扔石子', '白色石头', '野餐', '牛板筋'],
     photos: [
-      '/src/assets/images/base_1_2026_06_17.jpg'
+      '/images/base_1_2026_06_17.jpg'
     ],
     content: '伸手玩水啦💧 水凉凉的，很舒服🌊 捡了几颗小石子往河里扔。还捡了一块白色小石头拍照留念。带了蓝莓、樱桃、绿色小番茄和牛板筋，在河边野餐。落枕好多了。'
   },
@@ -174,8 +174,8 @@ export const INITIAL_LOGS: WalkLog[] = [
     weatherText: '多云 · 落枕',
     tags: ['双V树冠', '水流比云快', '老太太占座', '落枕'],
     photos: [
-      '/src/assets/images/base_2_2026_06_15.jpeg',
-      '/src/assets/images/base_2_2026_06_15_2.jpg'
+      '/images/base_2_2026_06_15.jpeg',
+      '/images/base_2_2026_06_15_2.jpg'
     ],
     content: '长椅被两个老太太占了。发现东向和北向两个V形树冠——天然取景框。河水从西向东流，比云彩快多了。二号基地的社交生态圈：抽烟老头→世界杯老头→两老太太→三喝酒老头。'
   },
@@ -196,8 +196,8 @@ export const INITIAL_LOGS: WalkLog[] = [
     weatherText: '多云→放晴 ☁️→☀️，灰白厚云层，空气潮湿，像要下雨',
     tags: ['端午节', '连续六次被占后终于空出', '云分两层', '舞台', 'Nuvole Bianche', 'Luminous'],
     photos: [
-      '/src/assets/images/base_2-2026_06_19_1.jpg',
-      '/src/assets/images/base_2_2026_06_19_2.jpg'
+      '/images/base_2-2026_06_19_1.jpg',
+      '/images/base_2_2026_06_19_2.jpg'
     ],
     content: '远远看到有车停着，心里一沉——连续第六次要被占？走近一看，长椅空的！旁边四人桌有人而已。终于又在二号基地角度拍天空照片了📸。\n\n天空是灰白色厚厚云层，云从西向东快速运动。山上各层树枝随风摆动。\n\n过了一会儿天空放晴，露出蓝色幕布。云朵依然快速移动，大小块云轮番上场。像是大自然的舞台，只对有心人开放。门票免费，但是门槛还是有。\n\n观察到云分两层：第一层大块云从西向东横着运动（低层风），中间有两片云相对位置不变，呈三角形顶点和对边排列，从南向北带一点偏东方向运动（高层风）。两层风系统在交错。\n\n背景音乐：Nuvole Bianche → Luminous 🎹'
   },
@@ -220,7 +220,7 @@ export const INITIAL_LOGS: WalkLog[] = [
     weatherText: '风大 · 偏冷',
     tags: ['风大', '打卡即走', '黑猫请假'],
     photos:[
-      '/src/assets/images/base_3_2026_06_06.jpg'
+      '/images/base_3_2026_06_06.jpg'
     ],
     content: '太冷了风大，不能长坐。黑猫不在——请假了。打卡即走。'
   },
@@ -272,8 +272,8 @@ export const INITIAL_LOGS: WalkLog[] = [
     weatherText: '晴 · 傍晚',
     tags: ['远征发现', '紫色鸢尾花', '河水清澈', '钓鱼人'],
     photos: [
-      '/src/assets/images/base_5_2026_06_11.jpg',
-      '/src/assets/images/base_5_2026_06_11_2.jpg'
+      '/images/base_5_2026_06_11.jpg',
+      '/images/base_5_2026_06_11_2.jpg'
     ],
     content: '一个人往西走了四十分钟。过了水文站、穿过松树林、经过高压塔——一路走到河谷入口。这里山、河、谷、花海同时出现。用手试了河水的温度——凉快、清澈。河岸草坪上开满了紫色鸢尾花，在傍晚的光里安静地亮着。远处有三个钓鱼人，每人相隔五十一百米。白色帐篷还在河对岸。走了这么远的路，找到这个地方，觉得值了。'
   },
@@ -285,8 +285,8 @@ export const INITIAL_LOGS: WalkLog[] = [
     weatherText: '阴天 · 有风',
     tags: ['第二次远征', '落枕', '丁香花', '彩色帐篷', '鸢尾花凋谢'],
     photos: [
-      '/src/assets/images/base_5_2026_06_16_2.jpg',
-      '/src/assets/images/base_5_2026-06-16.jpeg'
+      '/images/base_5_2026_06_16_2.jpg',
+      '/images/base_5_2026-06-16.jpeg'
     ],
     content: '落枕第二天，还是决定再去一次五号。入口处的丁香花开了，紫色的香气迎面扑来💜 但上次的鸢尾花已经开始败了。河边多了几顶彩色帐篷——颜色太鲜艳了，跟河谷不搭。公园里人不多，安安静静。回程路上看落叶松的枝叶——像小瀑布，像小烟花。远征50分钟，落枕还没好，但路走完了。'
   },

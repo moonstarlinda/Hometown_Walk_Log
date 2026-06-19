@@ -240,7 +240,7 @@ export default function AddLogModal({
               rows={2}
               value={photoPaths}
               onChange={(e) => setPhotoPaths(e.target.value)}
-              placeholder="/src/assets/images/base_1_ducks.jpg，或每行一张照片路径"
+              placeholder="/images/base_1_ducks.jpg，或每行一张照片路径"
               className="w-full text-xs p-3 bg-white border border-stone-200 rounded-xl focus:border-emerald-700 outline-none font-mono leading-relaxed"
             />
           </div>
