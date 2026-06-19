@@ -18,6 +18,7 @@ import {
   Map as MapIcon,
   MapPin,
   MoreHorizontal,
+  Palette,
   Pencil,
   Plus,
   RefreshCw,
@@ -40,6 +41,96 @@ const BASES_STORAGE_KEY = 'hometown_bases';
 const LOGS_STORAGE_KEY = 'hometown_logs';
 const INTRO_STORAGE_KEY = 'hometown_opening_intro_seen';
 const ROADSIDE_LOCATION_ID = 'roadside-observations';
+type Theme = 'default' | 'hockney' | 'sanctuary';
+type BasePalette = {
+  accent: string;
+  soft: string;
+  text: string;
+  shadow: string;
+};
+
+const SANCTUARY_PALETTES: Record<string, BasePalette> = {
+  'base-1': {
+    accent: '#4C8FA0',
+    soft: '#E3F6FA',
+    text: '#3A6F7D',
+    shadow: 'rgba(76,143,160,0.14)'
+  },
+  'base-2': {
+    accent: '#6F9862',
+    soft: '#EAF6E5',
+    text: '#55784C',
+    shadow: 'rgba(111,152,98,0.14)'
+  },
+  'base-3': {
+    accent: '#5C5A6B',
+    soft: '#EBEAF2',
+    text: '#464455',
+    shadow: 'rgba(92,90,107,0.16)'
+  },
+  'base-4': {
+    accent: '#C98B4F',
+    soft: '#FBEAD8',
+    text: '#936236',
+    shadow: 'rgba(201,139,79,0.16)'
+  },
+  'base-5': {
+    accent: '#A36D8F',
+    soft: '#F6E4F0',
+    text: '#7A526C',
+    shadow: 'rgba(163,109,143,0.16)'
+  },
+  [ROADSIDE_LOCATION_ID]: {
+    accent: '#7A7F68',
+    soft: '#ECEBDD',
+    text: '#5C624D',
+    shadow: 'rgba(122,127,104,0.18)'
+  }
+};
+
+function sanctuaryPaletteForBase(baseId?: string): BasePalette {
+  return SANCTUARY_PALETTES[baseId ?? ''] ?? SANCTUARY_PALETTES[ROADSIDE_LOCATION_ID];
+}
+
+const THEME_OPTIONS: Array<{
+  id: Theme;
+  label: string;
+  title: string;
+  icon: React.ReactNode;
+  swatches: string[];
+}> = [
+  {
+    id: 'default',
+    label: '经典自然',
+    title: '经典自然皮肤',
+    icon: <Compass className="h-3.5 w-3.5" />,
+    swatches: ['#2F5D4A', '#7F9E65', '#D8D0B4']
+  },
+  {
+    id: 'hockney',
+    label: '清凉夏日',
+    title: '清凉夏日皮肤',
+    icon: <Palette className="h-3.5 w-3.5" />,
+    swatches: ['#1F9CC1', '#63C9E8', '#DFF7FF']
+  },
+  {
+    id: 'sanctuary',
+    label: '五色秘境',
+    title: 'Five Sanctuary 五基地色谱',
+    icon: (
+      <span className="inline-flex items-center gap-0.5" aria-hidden="true">
+        {['#1F7F96', '#3F7F3A', '#2A293B', '#D97824', '#9A4F82'].map((color) => (
+          <span
+            key={color}
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: color }}
+          />
+        ))}
+      </span>
+    ),
+    swatches: ['#1F7F96', '#3F7F3A', '#2A293B', '#D97824', '#9A4F82']
+  }
+];
 const ROADSIDE_LOCATION: Base = {
   id: ROADSIDE_LOCATION_ID,
   title: '途中见闻',
@@ -119,6 +210,12 @@ export default function App() {
   const [filterBaseId, setFilterBaseId] = useState('all');
   const [filterWeather, setFilterWeather] = useState('all');
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [theme, setTheme] = useState<Theme>('default');
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const themeMenuRef = useRef<HTMLDivElement | null>(null);
+  const activeThemeOption = THEME_OPTIONS.find((option) => option.id === theme) ?? THEME_OPTIONS[0];
+  const isHockney = theme === 'hockney';
+  const isSanctuary = theme === 'sanctuary';
 
   useEffect(() => {
     const savedBases = normalizeSavedBases(parseSavedItems(localStorage.getItem(BASES_STORAGE_KEY)));
@@ -167,6 +264,30 @@ export default function App() {
       document.body.style.overflow = previousOverflow;
     };
   }, [finishIntro, showIntro]);
+
+  useEffect(() => {
+    if (!themeMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target as Node)) {
+        setThemeMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setThemeMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [themeMenuOpen]);
 
   const saveStateToStorage = (nextBases: Base[], nextLogs: WalkLog[]) => {
     localStorage.setItem(BASES_STORAGE_KEY, JSON.stringify(nextBases));
@@ -324,8 +445,16 @@ export default function App() {
   }, [prefersReducedMotion]);
 
   return (
-    <div className="min-h-screen bg-[#F5F4EC] text-stone-800 antialiased">
-      <header className="sticky top-0 z-40 border-b border-[#DDE5D6] bg-[#FAF9F1]/95 backdrop-blur">
+    <div
+      className={`min-h-screen text-stone-800 antialiased ${
+        isHockney ? 'hockney-root' : isSanctuary ? 'sanctuary-root' : 'bg-[#F5F4EC]'
+      }`}
+    >
+      <header
+        className={`sticky top-0 z-[70] border-b border-[#DDE5D6] bg-[#FAF9F1]/95 backdrop-blur ${
+          isHockney ? 'hockney-header' : isSanctuary ? 'sanctuary-header' : ''
+        }`}
+      >
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-3">
             <button
@@ -350,6 +479,79 @@ export default function App() {
             </button>
 
             <div className="flex items-center gap-2">
+              <div
+                role="group"
+                aria-label="视觉皮肤"
+                className="relative shrink-0"
+                ref={themeMenuRef}
+              >
+                <button
+                  type="button"
+                  aria-haspopup="menu"
+                  aria-expanded={themeMenuOpen}
+                  aria-label={`当前皮肤：${activeThemeOption.title}`}
+                  title={`当前使用：${activeThemeOption.title}`}
+                  onClick={() => setThemeMenuOpen((current) => !current)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] shadow-sm transition-colors hover:bg-[#EEF4E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78A68B]/35 ${
+                    themeMenuOpen
+                      ? 'ring-1 ring-[#D9E5D1]'
+                      : ''
+                  }`}
+                >
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <Palette className="h-4 w-4 shrink-0 text-[#5F8C53]" aria-hidden="true" />
+                    <span className="truncate leading-none">{activeThemeOption.label}</span>
+                  </span>
+                  <span className="ml-2 text-[10px] leading-none text-[#7B8C76]" aria-hidden="true">
+                    ▾
+                  </span>
+                </button>
+
+                <div
+                  role="menu"
+                  aria-label="选择皮肤"
+                  className={`absolute right-0 top-full z-[80] mt-2 w-[190px] overflow-hidden rounded-lg border border-[#DDE5D6] p-2 text-xs shadow-[0_12px_32px_rgba(21,29,59,0.08)] transition-all duration-150 ${
+                    themeMenuOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0'
+                  }`}
+                  style={{
+                    background: 'rgba(255, 253, 247, 0.96)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)'
+                  }}
+                >
+                  {THEME_OPTIONS.map((option) => {
+                    const active = theme === option.id;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={active}
+                        onClick={() => {
+                          setTheme(option.id);
+                          setThemeMenuOpen(false);
+                        }}
+                        aria-pressed={active}
+                        title={active ? `当前使用：${option.title}` : `切换至${option.title}`}
+                        className={`flex w-full items-center gap-3 rounded-[10px] px-[14px] py-[10px] text-left text-xs transition-colors duration-200 hover:bg-[#EEF4E8] focus-visible:outline-none focus-visible:bg-[#EEF4E8] ${
+                          active ? 'font-semibold text-[#2F5D4A]' : 'text-[#667463]'
+                        }`}
+                      >
+                        <span className="flex shrink-0 items-center gap-[3px]" aria-hidden="true">
+                          {option.swatches.slice(0, option.id === 'sanctuary' ? 5 : 3).map((color) => (
+                            <span
+                              key={color}
+                              className="h-1.5 w-1.5 rounded-full ring-1 ring-inset ring-black/5"
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate leading-none">{option.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={replayIntro}
@@ -425,6 +627,8 @@ export default function App() {
                 selectedBaseId={selectedBaseId}
                 onSelectBase={setSelectedBaseId}
                 latestLogPerBase={latestLogPerBase}
+                isHockney={isHockney}
+                isSanctuary={isSanctuary}
               />
             </section>
 
@@ -441,12 +645,18 @@ export default function App() {
                     base={base}
                     latestLog={latestLogPerBase[base.id]}
                     onClick={() => setSelectedBaseId(base.id)}
+                    isHockney={isHockney}
+                    isSanctuary={isSanctuary}
+                    palette={sanctuaryPaletteForBase(base.id)}
                   />
                 ))}
                 <BaseNoteCard
                   base={ROADSIDE_LOCATION}
                   latestLog={latestLogPerBase[ROADSIDE_LOCATION_ID]}
                   onClick={() => setSelectedBaseId(ROADSIDE_LOCATION_ID)}
+                  isHockney={isHockney}
+                  isSanctuary={isSanctuary}
+                  palette={sanctuaryPaletteForBase(ROADSIDE_LOCATION_ID)}
                 />
               </div>
             </section>
@@ -462,12 +672,19 @@ export default function App() {
             isEditing={isEditing}
             onBack={() => setSelectedBaseId(null)}
             onDeleteLog={handleDeleteLog}
+            isHockney={isHockney}
+            isSanctuary={isSanctuary}
+            palette={sanctuaryPaletteForBase(activeBaseDetails.id)}
           />
         )}
 
         {activeTab === 'timeline' && (
           <section className="space-y-5">
-            <div className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7]/90 p-3 shadow-sm shadow-emerald-950/5 backdrop-blur">
+            <div
+              className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7]/90 p-3 shadow-sm shadow-emerald-950/5 backdrop-blur ${
+                isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
+              }`}
+            >
               <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-[minmax(260px,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
                 <label className="group relative">
                   <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A987E] transition-colors group-focus-within:text-[#2F5D4A]" />
@@ -540,6 +757,9 @@ export default function App() {
                     base={base}
                     getWeatherIcon={getWeatherIcon}
                     isEditing={isEditing}
+                    isHockney={isHockney}
+                    isSanctuary={isSanctuary}
+                    palette={sanctuaryPaletteForBase(log.baseId)}
                     onOpenBase={() => {
                       setSelectedBaseId(log.baseId);
                       setActiveTab('bases');
@@ -552,7 +772,9 @@ export default function App() {
           </section>
         )}
 
-        {activeTab === 'stats' && <NatureStats logs={logs} bases={bases} />}
+        {activeTab === 'stats' && (
+          <NatureStats logs={logs} bases={bases} isHockney={isHockney} isSanctuary={isSanctuary} />
+        )}
       </main>
 
       <footer className="mx-auto max-w-6xl px-4 pb-8 pt-4 text-xs text-[#7D8C74] sm:px-6 lg:px-8">
@@ -566,7 +788,9 @@ export default function App() {
             onClick={scrollToTop}
             title="回到顶部"
             aria-label="回到顶部"
-            className="fixed bottom-5 right-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] text-[#2F5D4A] shadow-lg shadow-emerald-950/10 transition-colors hover:bg-[#EEF4E8] sm:bottom-6 lg:right-[max(1rem,calc((100vw-72rem)/2-3.75rem))]"
+            className={`fixed bottom-5 right-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] text-[#2F5D4A] shadow-lg shadow-emerald-950/10 transition-colors hover:bg-[#EEF4E8] sm:bottom-6 lg:right-[max(1rem,calc((100vw-72rem)/2-3.75rem))] ${
+              isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
+            }`}
             initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
@@ -676,15 +900,19 @@ function logPhotos(log: WalkLog) {
 const LogPhotoGrid: React.FC<{
   photos: string[];
   date: string;
-}> = ({ photos, date }) => {
+  isHockney?: boolean;
+}> = ({ photos, date, isHockney = false }) => {
   const visiblePhotos = photos.slice(0, 3);
+  const photoFrameClass = isHockney
+    ? 'hockney-image-frame bg-[#E8FAFF]/70'
+    : 'overflow-hidden rounded-lg';
 
   if (visiblePhotos.length === 0) return null;
 
   if (visiblePhotos.length === 1) {
     return (
       <div className="mt-4 w-fit">
-        <figure className="overflow-hidden rounded-lg">
+        <figure className={photoFrameClass}>
           <img
             src={visiblePhotos[0]}
             alt={`${formatDate(date)} observation`}
@@ -701,7 +929,7 @@ const LogPhotoGrid: React.FC<{
     return (
       <div className="mt-4 flex flex-wrap items-start gap-2">
         {visiblePhotos.map((photo, index) => (
-          <figure key={`${photo}-${index}`} className="overflow-hidden rounded-lg">
+          <figure key={`${photo}-${index}`} className={photoFrameClass}>
             <img
               src={photo}
               alt={`${formatDate(date)} observation ${index + 1}`}
@@ -718,7 +946,7 @@ const LogPhotoGrid: React.FC<{
   return (
     <div className="mt-4 flex flex-wrap items-start gap-2">
       {visiblePhotos.map((photo, index) => (
-        <figure key={`${photo}-${index}`} className="overflow-hidden rounded-lg">
+        <figure key={`${photo}-${index}`} className={photoFrameClass}>
           <img
             src={photo}
             alt={`${formatDate(date)} observation ${index + 1}`}
@@ -825,26 +1053,61 @@ const BaseNoteCard: React.FC<{
   base: Base;
   latestLog?: WalkLog;
   onClick: () => void;
-}> = ({ base, latestLog, onClick }) => {
+  isHockney?: boolean;
+  isSanctuary?: boolean;
+  palette?: BasePalette;
+}> = ({ base, latestLog, onClick, isHockney = false, isSanctuary = false, palette }) => {
   const cardImage = latestLog?.photos?.filter(Boolean)[0] ?? base.coverImage;
   const summary = latestLog?.content
     ? `“${shortText(latestLog.content, 42)}”`
     : shortText(base.description, 48);
+  const accent = palette?.accent ?? '#2F5D4A';
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group flex h-full w-full flex-col overflow-hidden rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] text-left shadow-sm shadow-emerald-950/5 transition-colors hover:border-[#BFD1B8] hover:bg-[#F9FAF2]"
+      className={`group flex h-full w-full flex-col overflow-hidden rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] text-left shadow-sm shadow-emerald-950/5 transition-colors hover:border-[#BFD1B8] hover:bg-[#F9FAF2] ${
+        isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
+      }`}
+      style={
+        isSanctuary && palette
+          ? ({
+              '--sanctuary-accent': palette.accent,
+              '--sanctuary-soft': palette.soft,
+              '--sanctuary-shadow': palette.shadow
+            } as React.CSSProperties)
+          : undefined
+      }
     >
-      <img
-        src={cardImage}
-        alt={base.title}
-        referrerPolicy="no-referrer"
-        className="block h-40 w-full flex-none object-cover object-center align-top transition-transform duration-500 group-hover:scale-[1.03]"
-      />
+      {isSanctuary && (
+        <span
+          aria-hidden="true"
+          className="block h-2.5 w-full"
+          style={{ backgroundColor: accent }}
+        />
+      )}
+      <span
+        className={`block h-40 w-full flex-none ${
+          isHockney ? 'hockney-image-frame' : isSanctuary ? 'sanctuary-image-frame' : ''
+        }`}
+      >
+        <img
+          src={cardImage}
+          alt={base.title}
+          referrerPolicy="no-referrer"
+          className="block h-full w-full object-cover object-center align-top transition-transform duration-500 group-hover:scale-[1.03]"
+        />
+      </span>
       <span className="block p-4">
-        <span className="block font-serif text-lg font-semibold text-[#243C32]">
+        <span className="flex items-center gap-2 font-serif text-lg font-semibold text-[#243C32]">
+          {isSanctuary && (
+            <span
+              aria-hidden="true"
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: accent }}
+            />
+          )}
           {base.title}
         </span>
         <span className="mt-2 block text-sm leading-6 text-[#66745E]">
@@ -891,9 +1154,15 @@ const RecentObservation: React.FC<{
 const BaseDetailCover: React.FC<{
   src: string;
   alt: string;
-}> = ({ src, alt }) => {
+  isHockney?: boolean;
+  isSanctuary?: boolean;
+}> = ({ src, alt, isHockney = false, isSanctuary = false }) => {
   return (
-    <figure className="h-44 w-full self-start overflow-hidden bg-[#F4F7ED] md:h-64 md:max-h-64">
+    <figure
+      className={`h-44 w-full self-start overflow-hidden bg-[#F4F7ED] md:h-64 md:max-h-64 ${
+        isHockney ? 'hockney-image-frame' : isSanctuary ? 'sanctuary-image-frame' : ''
+      }`}
+    >
       <img
         src={src}
         alt={alt}
@@ -911,6 +1180,9 @@ interface BaseDetailProps {
   isEditing: boolean;
   onBack: () => void;
   onDeleteLog: (id: string) => void;
+  isHockney?: boolean;
+  isSanctuary?: boolean;
+  palette?: BasePalette;
 }
 
 const BaseDetail: React.FC<BaseDetailProps> = ({
@@ -919,8 +1191,13 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
   getWeatherIcon,
   isEditing,
   onBack,
-  onDeleteLog
+  onDeleteLog,
+  isHockney = false,
+  isSanctuary = false,
+  palette
 }) => {
+  const accent = palette?.accent ?? '#2F5D4A';
+
   return (
     <section className="space-y-3">
       <button
@@ -932,14 +1209,40 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
         返回首页
       </button>
 
-      <div className="overflow-hidden rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] shadow-sm shadow-emerald-950/5">
+      <div
+        className={`overflow-hidden rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] shadow-sm shadow-emerald-950/5 ${
+          isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
+        }`}
+        style={
+          isSanctuary && palette
+            ? ({
+                '--sanctuary-accent': palette.accent,
+                '--sanctuary-soft': palette.soft,
+                '--sanctuary-shadow': palette.shadow,
+                borderColor: palette.accent
+              } as React.CSSProperties)
+            : undefined
+        }
+      >
         <div className="grid items-start md:grid-cols-[300px_1fr]">
-          <BaseDetailCover src={base.coverImage} alt={base.title} />
+          <BaseDetailCover
+            src={base.coverImage}
+            alt={base.title}
+            isHockney={isHockney}
+            isSanctuary={isSanctuary}
+          />
           <div className="p-4 sm:p-5">
             <div>
               <div>
                 <p className="text-xs text-[#7D8C74]">{base.subtitle}</p>
-                <h1 className="mt-0.5 font-serif text-2xl font-semibold text-[#243C32] sm:text-3xl">
+                <h1 className="mt-0.5 flex items-center gap-2 font-serif text-2xl font-semibold text-[#243C32] sm:text-3xl">
+                  {isSanctuary && (
+                    <span
+                      aria-hidden="true"
+                      className="h-3 w-3 shrink-0 rounded-full"
+                      style={{ backgroundColor: accent }}
+                    />
+                  )}
                   {base.title}
                 </h1>
               </div>
@@ -957,8 +1260,15 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
 
       <div className="space-y-2">
         <h2 className="font-serif text-xl font-semibold text-[#243C32]">这个地点的记录</h2>
+        {isSanctuary && (
+          <span aria-hidden="true" className="block h-1 w-16 rounded-full" style={{ backgroundColor: accent }} />
+        )}
         {logs.length === 0 ? (
-          <div className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-8 text-center text-sm text-[#6B7E65]">
+          <div
+            className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-8 text-center text-sm text-[#6B7E65] ${
+              isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
+            }`}
+          >
             还没有记录。
           </div>
         ) : (
@@ -968,6 +1278,9 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
               log={log}
               getWeatherIcon={getWeatherIcon}
               isEditing={isEditing}
+              isHockney={isHockney}
+              isSanctuary={isSanctuary}
+              palette={palette}
               onDelete={() => onDeleteLog(log.id)}
             />
           ))
@@ -982,6 +1295,9 @@ interface LogCardProps {
   base?: Base;
   getWeatherIcon: (weather: string) => React.ReactNode;
   isEditing: boolean;
+  isHockney?: boolean;
+  isSanctuary?: boolean;
+  palette?: BasePalette;
   onOpenBase?: () => void;
   onDelete: () => void;
 }
@@ -991,6 +1307,9 @@ const LogCard: React.FC<LogCardProps> = ({
   base,
   getWeatherIcon,
   isEditing,
+  isHockney = false,
+  isSanctuary = false,
+  palette,
   onOpenBase,
   onDelete
 }) => {
@@ -1016,7 +1335,20 @@ const LogCard: React.FC<LogCardProps> = ({
 
   return (
     <div className="relative" ref={actionsRef}>
-      <article className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-4 pr-12 shadow-sm shadow-emerald-950/5 xl:pr-4">
+      <article
+        className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-4 pr-12 shadow-sm shadow-emerald-950/5 xl:pr-4 ${
+          isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
+        }`}
+        style={
+          isSanctuary && palette
+            ? ({
+                '--sanctuary-accent': palette.accent,
+                '--sanctuary-soft': palette.soft,
+                '--sanctuary-shadow': palette.shadow
+              } as React.CSSProperties)
+            : undefined
+        }
+      >
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="flex flex-wrap items-center gap-2 text-xs text-[#6B7E65]">
           <span className="inline-flex items-center gap-1 rounded-md bg-[#EEF4E8] px-2 py-1 font-mono text-[#5B7055]">
@@ -1032,6 +1364,14 @@ const LogCard: React.FC<LogCardProps> = ({
               type="button"
               onClick={onOpenBase}
               className="rounded-md bg-[#EEF4E8] px-2 py-1 text-[#4D6B50] transition-colors hover:bg-[#E1ECD9]"
+              style={
+                isSanctuary && palette
+                  ? {
+                      backgroundColor: palette.soft,
+                      color: palette.text
+                    }
+                  : undefined
+              }
             >
               {base.title}
             </button>
@@ -1041,7 +1381,7 @@ const LogCard: React.FC<LogCardProps> = ({
       <p className="whitespace-pre-line font-serif text-base leading-8 text-stone-800">
         {log.content}
       </p>
-      <LogPhotoGrid photos={photos} date={log.date} />
+      <LogPhotoGrid photos={photos} date={log.date} isHockney={isHockney} />
       <div className="mt-3 flex flex-wrap gap-1.5">
         {log.tags.map((tag) => (
           <span

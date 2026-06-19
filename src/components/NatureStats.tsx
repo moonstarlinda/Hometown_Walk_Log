@@ -9,6 +9,8 @@ import { Calendar, CloudSun, Heart, Leaf, Route } from 'lucide-react';
 interface NatureStatsProps {
   logs: WalkLog[];
   bases: Base[];
+  isHockney?: boolean;
+  isSanctuary?: boolean;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -76,6 +78,55 @@ const WORD_CLOUD_COLORS: Record<string, string> = {
 };
 
 const WORD_CLOUD_FALLBACK_COLORS = ['#2F5D4A', '#4D8390', '#7A693A', '#6B7E65', '#5B7055'];
+const HOCKNEY_WORD_CLOUD_COLORS: Record<string, string> = {
+  河水: '#137FBE',
+  黑猫: '#1F2E2C',
+  鸢尾花: '#7356B8',
+  水文站: '#F3FBF4',
+  鸭子: '#4B8F61',
+  松树: '#1F7B65',
+  丁香花: '#9168C8',
+  落叶松: '#6FA85D',
+  河谷: '#189FC2',
+  沙洲: '#6CB6A8',
+  长椅: '#4B8F83',
+  毛毛虫: '#49A75F',
+  石头: '#77A6A6',
+  云层: '#5EAED2',
+  钓鱼人: '#287C79',
+  帐篷: '#5DB3C4',
+  薄云: '#6DBED7',
+  霞光: '#3F9FB8'
+};
+const HOCKNEY_WORD_CLOUD_FALLBACK_COLORS = ['#137FBE', '#17A8B8', '#2AAE80', '#4AC4A4', '#587BC8'];
+const SANCTUARY_WORD_CLOUD_COLORS: Record<string, string> = {
+  河水: '#4C8FA0',
+  黑猫: '#5C5A6B',
+  鸢尾花: '#A36D8F',
+  水文站: '#8A8D7A',
+  鸭子: '#6F9862',
+  松树: '#6F9862',
+  丁香花: '#A36D8F',
+  落叶松: '#6F9862',
+  河谷: '#4C8FA0',
+  沙洲: '#A57845',
+  长椅: '#6A624C',
+  毛毛虫: '#6F9862',
+  石头: '#74766F',
+  云层: '#7D8492',
+  钓鱼人: '#4C8FA0',
+  帐篷: '#C98B4F',
+  薄云: '#9AA1A5',
+  霞光: '#C98B4F'
+};
+const SANCTUARY_WORD_CLOUD_FALLBACK_COLORS = ['#4C8FA0', '#6F9862', '#5C5A6B', '#C98B4F', '#A36D8F'];
+const SANCTUARY_BASE_COLORS: Record<string, string> = {
+  'base-1': '#4C8FA0',
+  'base-2': '#6F9862',
+  'base-3': '#5C5A6B',
+  'base-4': '#C98B4F',
+  'base-5': '#A36D8F'
+};
 
 type WordCloudWord = {
   word: string;
@@ -85,13 +136,18 @@ type WordCloudWord = {
   y: number;
 };
 
-// Generate random rotation between -10 and 10 degrees
-function randomRotation(index: number) {
+function randomRotation(index: number, maxDegrees = 5) {
   const seed = index * 137;
-  return ((seed % 21) - 10) * 0.5;
+  const normalized = ((seed % 1000) / 1000) * 2 - 1;
+  return normalized * maxDegrees;
 }
 
-export default function NatureStats({ logs, bases }: NatureStatsProps) {
+export default function NatureStats({
+  logs,
+  bases,
+  isHockney = false,
+  isSanctuary = false
+}: NatureStatsProps) {
   const totalLogs = logs.length;
 
   const weatherCounts: Record<string, number> = {
@@ -246,7 +302,15 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
   return (
     <div className="space-y-6">
       {/* 顶部：散步日历（全宽） */}
-      <section className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5">
+      <section
+        className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
+          isHockney
+            ? 'hockney-card'
+            : isSanctuary
+              ? 'sanctuary-card sanctuary-spectrum-card'
+              : ''
+        }`}
+      >
         <div className="mb-5">
           <h2 className="flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
             <Calendar className="h-5 w-5 text-[#5F7D58]" />
@@ -315,16 +379,24 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
       {/* 底部：双列布局 */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* 左侧列：散步日志纵览 */}
-        <section className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5">
+        <section
+          className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
+            isHockney
+              ? 'hockney-card'
+              : isSanctuary
+                ? 'sanctuary-card sanctuary-spectrum-card'
+                : ''
+          }`}
+        >
           <h3 className="mb-4 flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
-            <span className="rounded-md bg-[#EEF4E8] p-1 text-[#2F5D4A]">
+            <span className={`rounded-md p-1 ${isSanctuary ? 'bg-[#EAF6E5] text-[#5D9C4A]' : 'bg-[#EEF4E8] text-[#2F5D4A]'}`}>
               <Route className="h-4 w-4" />
             </span>
             散步日志纵览
           </h3>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] p-3">
+            <div className={`rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] p-3 ${isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
               <p className="font-mono text-[10px] text-[#7D8C74]">BASES</p>
               <p className="mt-1 font-serif text-2xl font-semibold text-[#243C32]">
                 {bases.length} 个
@@ -332,7 +404,7 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
               <p className="mt-1 text-xs text-[#6B7E65]">标记基地</p>
             </div>
 
-            <div className="rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] p-3">
+            <div className={`rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] p-3 ${isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
               <p className="font-mono text-[10px] text-[#7D8C74]">JOURNALS</p>
               <p className="mt-1 font-serif text-2xl font-semibold text-[#243C32]">
                 {totalLogs} 篇
@@ -341,7 +413,7 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
             </div>
           </div>
 
-          <div className="mt-4 rounded-lg border border-[#DDE5D6] bg-[#F4F7ED] p-4">
+          <div className={`mt-4 rounded-lg border border-[#DDE5D6] bg-[#F4F7ED] p-4 ${isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
             <p className="font-serif text-sm font-semibold text-[#2F5D4A]">
               常去基地
             </p>
@@ -352,13 +424,17 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
                   1,
                   Math.ceil((base.count / maxBaseCount) * FOOTSTEP_LEVELS)
                 );
+                const baseColor = SANCTUARY_BASE_COLORS[base.id];
 
                 return (
                   <div
                     key={base.id}
                     className="grid grid-cols-1 gap-1.5 sm:grid-cols-[minmax(8.5rem,9.75rem)_minmax(12rem,1fr)_2.25rem] sm:items-center sm:gap-1.5"
                   >
-                    <span className="min-w-0 truncate text-xs font-medium text-[#66745E]">
+                    <span
+                      className="min-w-0 truncate text-xs font-medium text-[#66745E]"
+                      style={isSanctuary && baseColor ? { color: baseColor } : undefined}
+                    >
                       {base.title.replace(/^(\d)号基地 · /, '0$1号基地 · ')}
                     </span>
                     <div
@@ -393,15 +469,31 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
         </section>
 
         {/* 右侧列：自然意象 */}
-        <section className="rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5">
+        <section
+          className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
+            isHockney
+              ? 'hockney-card'
+              : isSanctuary
+                ? 'sanctuary-card sanctuary-spectrum-card'
+                : ''
+          }`}
+        >
           <h3 className="mb-4 flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
-            <span className="rounded-md bg-[#F4F0E3] p-1 text-[#7A693A]">
+            <span className={`rounded-md p-1 ${isSanctuary ? 'bg-[#F6E4F0] text-[#B46498]' : 'bg-[#F4F0E3] text-[#7A693A]'}`}>
               <Leaf className="h-4 w-4" />
             </span>
             自然意象
           </h3>
 
-          <div className="relative h-58 overflow-hidden rounded-lg border border-[#E5E1D6] bg-[#FAF9F1]">
+          <div
+            className={`relative h-58 overflow-hidden rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] ${
+              isHockney
+                ? 'hockney-card bg-[#E8FAFF]/55'
+                : isSanctuary
+                  ? 'sanctuary-card bg-[#FFF9EC]/70'
+                  : ''
+            }`}
+          >
             {wordCloudWords.length > 0 ? (
               <svg viewBox="0 0 320 180" className="w-full h-full">
                 <defs>
@@ -418,22 +510,33 @@ export default function NatureStats({ logs, bases }: NatureStatsProps) {
                         : tier === 'important'
                           ? 18 + ratio * 6
                           : 13 + ratio * 4;
-                    const color =
-                      WORD_CLOUD_COLORS[word] ??
-                      WORD_CLOUD_FALLBACK_COLORS[index % WORD_CLOUD_FALLBACK_COLORS.length];
-                    const rotation = tier === 'core' ? 0 : randomRotation(index);
+                    const color = isHockney
+                      ? HOCKNEY_WORD_CLOUD_COLORS[word] ??
+                        HOCKNEY_WORD_CLOUD_FALLBACK_COLORS[
+                          index % HOCKNEY_WORD_CLOUD_FALLBACK_COLORS.length
+                        ]
+                      : isSanctuary
+                        ? SANCTUARY_WORD_CLOUD_COLORS[word] ??
+                          SANCTUARY_WORD_CLOUD_FALLBACK_COLORS[
+                            index % SANCTUARY_WORD_CLOUD_FALLBACK_COLORS.length
+                          ]
+                        : WORD_CLOUD_COLORS[word] ??
+                          WORD_CLOUD_FALLBACK_COLORS[index % WORD_CLOUD_FALLBACK_COLORS.length];
+                    const rotation = tier === 'core' ? 0 : randomRotation(index, isHockney ? 8 : 5);
+                    const driftX = isHockney && tier !== 'core' ? ((index % 3) - 1) * 4 : 0;
+                    const driftY = isHockney && tier !== 'core' ? ((index % 2) ? 3 : -3) : 0;
 
                     return (
                       <text
                         key={word}
-                        x={x}
-                        y={y}
+                        x={x + driftX}
+                        y={y + driftY}
                         fontSize={fontSize}
                         fontFamily="serif"
                         fontWeight="600"
                         fill={color}
                         opacity={tier === 'core' ? 1 : 0.68 + ratio * 0.28}
-                        transform={`rotate(${rotation}, ${x}, ${y})`}
+                        transform={`rotate(${rotation}, ${x + driftX}, ${y + driftY})`}
                         textAnchor="middle"
                         dominantBaseline="middle"
                         title={`"${word}": 出现 ${count} 次`}
