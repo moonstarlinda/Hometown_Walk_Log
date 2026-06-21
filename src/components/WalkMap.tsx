@@ -13,6 +13,7 @@ interface WalkMapProps {
   onSelectBase: (id: string) => void;
   latestLogPerBase: Record<string, WalkLog | undefined>;
   isHockney?: boolean;
+  isHockneySummer?: boolean;
   isSanctuary?: boolean;
 }
 
@@ -34,6 +35,7 @@ export default function WalkMap({
   onSelectBase,
   latestLogPerBase,
   isHockney = false,
+  isHockneySummer = false,
   isSanctuary = false
 }: WalkMapProps) {
   const [hoveredBaseId, setHoveredBaseId] = useState<string | null>(null);
@@ -69,25 +71,42 @@ export default function WalkMap({
     return `${text.slice(0, maxLength)}...`;
   };
 
+  const hoverCardStyle: React.CSSProperties = {
+    ...(isHockneySummer
+      ? {
+          borderColor: '#0057D9',
+          backgroundColor: '#FFF8A6',
+          color: '#0057D9',
+          boxShadow: '5px 5px 0 rgba(243, 56, 200, 0.32)'
+        }
+      : {}),
+    ...(isSanctuary && hoveredPalette
+      ? {
+          borderColor: `color-mix(in srgb, ${hoveredPalette.accent} 15%, transparent)`,
+          backgroundColor: hoveredPalette.soft
+        }
+      : {})
+  };
+
   return (
     <section
       className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-3 shadow-sm shadow-emerald-950/5 ${
-        isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-map-card' : ''
+        isHockneySummer ? 'hockney-summer-map-card' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-map-card' : ''
       }`}
     >
-      <div className="relative overflow-x-auto">
+      <div className={`relative overflow-x-auto ${isHockneySummer ? 'hockney-summer-map-viewport' : ''}`}>
         <svg
           viewBox="0 0 820 360"
           className={`block h-[230px] w-full rounded-lg border border-[#E4E8D7] bg-[#F8F7EF] sm:h-[290px] lg:h-[340px] ${
-            isHockney ? 'hockney-map-surface' : isSanctuary ? 'sanctuary-map-surface' : ''
+            isHockneySummer ? 'hockney-summer-map-surface' : isHockney ? 'hockney-map-surface' : isSanctuary ? 'sanctuary-map-surface' : ''
           }`}
           preserveAspectRatio="xMidYMid meet"
         >
           <defs>
             <linearGradient id="quietRiver" x1="0%" x2="100%" y1="0%" y2="0%">
-              <stop offset="0%" stopColor={isHockney ? '#48C7E9' : '#DCEFE9'} />
-              <stop offset="52%" stopColor={isHockney ? '#75E2CE' : '#CDE8E1'} />
-              <stop offset="100%" stopColor={isHockney ? '#1D9ECB' : '#B9DFD8'} />
+              <stop offset="0%" stopColor={isHockneySummer ? '#16A9D8' : isHockney ? '#48C7E9' : '#DCEFE9'} />
+              <stop offset="52%" stopColor={isHockneySummer ? '#16A9D8' : isHockney ? '#75E2CE' : '#CDE8E1'} />
+              <stop offset="100%" stopColor={isHockneySummer ? '#0057D9' : isHockney ? '#1D9ECB' : '#B9DFD8'} />
             </linearGradient>
             <filter id="hockneyWaterNoise" x="-12%" y="-40%" width="124%" height="180%">
               <feTurbulence
@@ -104,14 +123,22 @@ export default function WalkMap({
             </filter>
           </defs>
 
+          {isHockneySummer && (
+            <g className="hockney-summer-map-blocks" aria-hidden="true">
+              <path d="M 0 0 H 295 L 230 120 L 0 138 Z" fill="#14B85A" />
+              <path d="M 520 0 H 820 V 132 L 668 110 Z" fill="#F338C8" />
+              <path d="M 580 220 L 820 162 V 360 H 616 Z" fill="#16A9D8" />
+            </g>
+          )}
+
           <path
             d="M 430 60 C 520 20 650 35 790 70"
             fill="none"
-            stroke={isHockney ? '#B7F0D9' : '#DDE8D3'}
+            stroke={isHockneySummer ? '#14B85A' : isHockney ? '#B7F0D9' : '#DDE8D3'}
             strokeLinecap="round"
-            strokeWidth={isHockney ? '64' : '58'}
-            opacity={isHockney ? '0.62' : '0.55'}
-            filter={isHockney ? 'url(#hockneyWaterNoise)' : undefined}
+            strokeWidth={isHockneySummer ? '74' : isHockney ? '64' : '58'}
+            opacity={isHockneySummer ? '0.82' : isHockney ? '0.62' : '0.55'}
+            filter={isHockney || isHockneySummer ? 'url(#hockneyWaterNoise)' : undefined}
           />
 
           <path
@@ -119,17 +146,17 @@ export default function WalkMap({
             fill="none"
             stroke="url(#quietRiver)"
             strokeLinecap="round"
-            strokeWidth={isHockney ? '40' : '34'}
-            opacity={isHockney ? '0.92' : '1'}
-            filter={isHockney ? 'url(#hockneyWaterNoise)' : undefined}
+            strokeWidth={isHockneySummer ? '52' : isHockney ? '40' : '34'}
+            opacity={isHockneySummer ? '0.98' : isHockney ? '0.92' : '1'}
+            filter={isHockney || isHockneySummer ? 'url(#hockneyWaterNoise)' : undefined}
           />
           <path
             d="M 85 140 C 155 230 230 300 340 300 C 430 300 485 252 540 220 C 595 188 620 180 660 175 C 710 168 725 145 760 130"
             fill="none"
-            stroke={isHockney ? '#208E8D' : isSanctuary ? '#9A9B87' : '#8FA884'}
-            strokeDasharray={isHockney ? '8 10' : '6 8'}
+            stroke={isHockneySummer ? '#0057D9' : isHockney ? '#208E8D' : isSanctuary ? '#9A9B87' : '#8FA884'}
+            strokeDasharray={isHockneySummer ? '1 13' : isHockney ? '8 10' : '6 8'}
             strokeLinecap="round"
-            strokeWidth="2"
+            strokeWidth={isHockneySummer ? '6' : '2'}
           />
 
           <text x="95" y="65" className="fill-[#6F8A73] text-sm">
@@ -154,6 +181,19 @@ export default function WalkMap({
                 onMouseEnter={() => setHoveredBaseId(base.id)}
                 onMouseLeave={() => setHoveredBaseId(null)}
               >
+                {isHockneySummer && (
+                  <rect
+                    x={pos.x - (active || hovered ? 25 : 21)}
+                    y={pos.y - (active || hovered ? 25 : 21)}
+                    width={active || hovered ? 50 : 42}
+                    height={active || hovered ? 50 : 42}
+                    rx="6"
+                    fill={active ? '#F338C8' : hovered ? '#FFF22E' : '#FFF8A6'}
+                    stroke="#0057D9"
+                    strokeWidth="2.5"
+                    className="hockney-summer-map-marker transition-all"
+                  />
+                )}
                 {isSanctuary && (active || hovered) && (
                   <circle
                     cx={pos.x}
@@ -166,9 +206,13 @@ export default function WalkMap({
                 <circle
                   cx={pos.x}
                   cy={pos.y}
-                  r={isSanctuary ? (active || hovered ? 24 : 19) : active || hovered ? 21 : 17}
+                  r={isHockneySummer ? (active || hovered ? 15 : 12) : isSanctuary ? (active || hovered ? 24 : 19) : active || hovered ? 21 : 17}
                   fill={
-                    isHockney
+                    isHockneySummer
+                      ? active
+                        ? '#F338C8'
+                        : '#16A9D8'
+                      : isHockney
                       ? active
                         ? '#1F9CC1'
                         : 'rgba(255,255,255,0.82)'
@@ -183,7 +227,9 @@ export default function WalkMap({
                         : '#FFFDF7'
                   }
                   stroke={
-                    isHockney
+                    isHockneySummer
+                      ? '#0057D9'
+                      : isHockney
                       ? active
                         ? '#0D7192'
                         : '#47B8D2'
@@ -195,7 +241,7 @@ export default function WalkMap({
                         ? '#2F5D4A'
                         : '#7FA06E'
                   }
-                  strokeWidth={isSanctuary ? '3.5' : '2.5'}
+                  strokeWidth={isHockneySummer ? '2' : isSanctuary ? '3.5' : '2.5'}
                   filter={isHockney ? 'url(#hockneyMarkerGlow)' : undefined}
                   className="transition-all"
                 />
@@ -205,7 +251,9 @@ export default function WalkMap({
                   textAnchor="middle"
                   className={`pointer-events-none text-sm font-semibold ${
                     active
-                      ? 'fill-[#FFFDF4]'
+                        ? 'fill-[#FFFDF4]'
+                      : isHockneySummer
+                        ? 'fill-[#0057D9]'
                       : isSanctuary
                         ? 'fill-[#243C32]'
                         : 'fill-[#3F5F43]'
@@ -218,7 +266,7 @@ export default function WalkMap({
                   y={pos.y - 28}
                   textAnchor="middle"
                   className="pointer-events-none text-sm font-medium"
-                  style={isSanctuary ? { fill: palette.text } : { fill: '#4D6B50' }}
+                  style={isHockneySummer ? { fill: '#0057D9' } : isSanctuary ? { fill: palette.text } : { fill: '#4D6B50' }}
                 >
                   {name}
                 </text>
@@ -232,34 +280,48 @@ export default function WalkMap({
             className={`map-hover-card pointer-events-none bottom-3 left-3 right-3 z-10 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7]/95 p-3 text-sm text-stone-700 shadow-sm shadow-emerald-950/10 md:right-auto md:max-w-sm ${
               isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
             }`}
-            style={
-              isSanctuary && hoveredPalette
-                ? {
-                    borderColor: `color-mix(in srgb, ${hoveredPalette.accent} 15%, transparent)`,
-                    backgroundColor: hoveredPalette.soft
-                  }
-                : undefined
-            }
+            style={hoverCardStyle}
           >
-            <div className="mb-1 flex items-center gap-2 font-medium text-[#243C32]">
+            <div
+              className="mb-1 flex items-center gap-2 font-medium text-[#243C32]"
+              style={isHockneySummer ? { color: '#0057D9' } : undefined}
+            >
               <MapPin
                 className="h-4 w-4 text-[#5F7D58]"
-                style={isSanctuary && hoveredPalette ? { color: hoveredPalette.accent } : undefined}
+                style={
+                  isSanctuary && hoveredPalette
+                    ? { color: hoveredPalette.accent }
+                    : isHockneySummer
+                      ? { color: '#F338C8' }
+                      : undefined
+                }
               />
               {hoveredBase.title}
             </div>
-            <p className="line-clamp-2 text-xs leading-5 text-[#66745E]">
+            <p
+              className="line-clamp-2 text-xs leading-5 text-[#66745E]"
+              style={isHockneySummer ? { color: '#0057D9' } : undefined}
+            >
               {shortText(hoveredBase.location, 24)}
             </p>
             {hoveredLatestLog && (
-              <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-stone-700">
-                <span className="font-mono text-[#5F7D58]">
+              <p
+                className="mt-1.5 line-clamp-2 text-xs leading-5 text-stone-700"
+                style={isHockneySummer ? { color: '#0057D9' } : undefined}
+              >
+                <span
+                  className="font-mono text-[#5F7D58]"
+                  style={isHockneySummer ? { color: '#14B85A' } : undefined}
+                >
                   {formatDate(hoveredLatestLog.date)}
                 </span>
                 ：{shortText(hoveredLatestLog.content)}
               </p>
             )}
-            <span className="mt-2 inline-flex items-center gap-1 text-xs text-[#5F7D58]">
+            <span
+              className="mt-2 inline-flex items-center gap-1 text-xs text-[#5F7D58]"
+              style={isHockneySummer ? { color: '#FF5A2D' } : undefined}
+            >
               点击查看 <ArrowRight className="h-3 w-3" />
             </span>
           </div>

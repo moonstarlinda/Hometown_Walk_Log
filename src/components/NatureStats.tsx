@@ -10,6 +10,7 @@ interface NatureStatsProps {
   logs: WalkLog[];
   bases: Base[];
   isHockney?: boolean;
+  isHockneySummer?: boolean;
   isSanctuary?: boolean;
 }
 
@@ -146,6 +147,7 @@ export default function NatureStats({
   logs,
   bases,
   isHockney = false,
+  isHockneySummer = false,
   isSanctuary = false
 }: NatureStatsProps) {
   const totalLogs = logs.length;
@@ -300,11 +302,13 @@ export default function NatureStats({
   })).sort((a, b) => b.count - a.count);
 
   return (
-    <div className="space-y-6">
+    <div className={isHockneySummer ? 'hockney-summer-page space-y-6' : 'space-y-6'}>
       {/* 顶部：散步日历（全宽） */}
       <section
         className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
-          isHockney
+          isHockneySummer
+            ? 'hockney-summer-panel'
+            : isHockney
             ? 'hockney-card'
             : isSanctuary
               ? 'sanctuary-card sanctuary-calendar-card'
@@ -380,8 +384,10 @@ export default function NatureStats({
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* 左侧列：散步日志纵览 */}
         <section
-          className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
-            isHockney
+        className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
+            isHockneySummer
+              ? 'hockney-summer-panel'
+              : isHockney
               ? 'hockney-card'
               : isSanctuary
                 ? 'sanctuary-card sanctuary-spectrum-card'
@@ -396,7 +402,7 @@ export default function NatureStats({
           </h3>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className={`rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] p-3 ${isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
+            <div className={`rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] p-3 ${isHockneySummer ? 'hockney-summer-metric' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
               <p className="font-mono text-[10px] text-[#7D8C74]">BASES</p>
               <p className="mt-1 font-serif text-2xl font-semibold text-[#243C32]">
                 {bases.length} 个
@@ -404,7 +410,7 @@ export default function NatureStats({
               <p className="mt-1 text-xs text-[#6B7E65]">标记基地</p>
             </div>
 
-            <div className={`rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] p-3 ${isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
+            <div className={`rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] p-3 ${isHockneySummer ? 'hockney-summer-metric' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
               <p className="font-mono text-[10px] text-[#7D8C74]">JOURNALS</p>
               <p className="mt-1 font-serif text-2xl font-semibold text-[#243C32]">
                 {totalLogs} 篇
@@ -413,7 +419,7 @@ export default function NatureStats({
             </div>
           </div>
 
-          <div className={`mt-4 rounded-lg border border-[#DDE5D6] bg-[#F4F7ED] p-4 ${isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
+          <div className={`mt-4 rounded-lg border border-[#DDE5D6] bg-[#F4F7ED] p-4 ${isHockneySummer ? 'hockney-summer-metric hockney-summer-metric-green' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
             <p className="font-serif text-sm font-semibold text-[#2F5D4A]">
               常去基地
             </p>
@@ -476,8 +482,10 @@ export default function NatureStats({
 
         {/* 右侧列：自然意象 */}
         <section
-          className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
-            isHockney
+        className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
+            isHockneySummer
+              ? 'hockney-summer-panel'
+              : isHockney
               ? 'hockney-card'
               : isSanctuary
                 ? 'sanctuary-card sanctuary-spectrum-card'
@@ -493,7 +501,9 @@ export default function NatureStats({
 
           <div
             className={`relative h-58 overflow-hidden rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] ${
-              isHockney
+              isHockneySummer
+                ? 'hockney-summer-word-cloud'
+                : isHockney
                 ? 'hockney-card bg-[#E8FAFF]/55'
                 : isSanctuary
                   ? 'sanctuary-card bg-[#FFF9EC]/70'
@@ -516,7 +526,11 @@ export default function NatureStats({
                         : tier === 'important'
                           ? 18 + ratio * 6
                           : 13 + ratio * 4;
-                    const color = isHockney
+                    const color = isHockneySummer
+                      ? ['#0057D9', '#16A9D8', '#F338C8', '#14B85A', '#FF5A2D'][
+                          index % 5
+                        ]
+                      : isHockney
                       ? HOCKNEY_WORD_CLOUD_COLORS[word] ??
                         HOCKNEY_WORD_CLOUD_FALLBACK_COLORS[
                           index % HOCKNEY_WORD_CLOUD_FALLBACK_COLORS.length

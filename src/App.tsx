@@ -26,6 +26,7 @@ import {
   Search,
   Sun,
   Trash2,
+  TreePine,
   Wind
 } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
@@ -41,7 +42,7 @@ const BASES_STORAGE_KEY = 'hometown_bases';
 const LOGS_STORAGE_KEY = 'hometown_logs';
 const INTRO_STORAGE_KEY = 'hometown_opening_intro_seen';
 const ROADSIDE_LOCATION_ID = 'roadside-observations';
-type Theme = 'default' | 'hockney' | 'sanctuary';
+type Theme = 'default' | 'hockney' | 'hockneySummer' | 'sanctuary';
 type BasePalette = {
   accent: string;
   soft: string;
@@ -129,6 +130,13 @@ const THEME_OPTIONS: Array<{
       </span>
     ),
     swatches: ['#4BA3C3', '#4E8B5B', '#4B4E6D', '#D98C3A', '#7A5C8C']
+  },
+  {
+    id: 'hockneySummer',
+    label: '霍克尼夏日',
+    title: '霍克尼夏日皮肤',
+    icon: <Sun className="h-3.5 w-3.5" />,
+    swatches: ['#FFF22E', '#0057D9', '#16A9D8', '#F338C8', '#14B85A', '#FF5A2D']
   }
 ];
 const ROADSIDE_LOCATION: Base = {
@@ -215,6 +223,7 @@ export default function App() {
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
   const activeThemeOption = THEME_OPTIONS.find((option) => option.id === theme) ?? THEME_OPTIONS[0];
   const isHockney = theme === 'hockney';
+  const isHockneySummer = theme === 'hockneySummer';
   const isSanctuary = theme === 'sanctuary';
 
   useEffect(() => {
@@ -447,16 +456,16 @@ export default function App() {
   return (
     <div
       className={`min-h-screen text-stone-800 antialiased ${
-        isHockney ? 'hockney-root' : isSanctuary ? 'sanctuary-root' : 'bg-[#F5F4EC]'
+        isHockneySummer ? 'hockney-summer-root' : isHockney ? 'hockney-root' : isSanctuary ? 'sanctuary-root' : 'bg-[#F5F4EC]'
       }`}
     >
       <header
         className={`sticky top-0 z-[70] border-b border-[#DDE5D6] bg-[#FAF9F1]/95 backdrop-blur ${
-          isHockney ? 'hockney-header' : isSanctuary ? 'sanctuary-header' : ''
+          isHockneySummer ? 'hockney-summer-header' : isHockney ? 'hockney-header' : isSanctuary ? 'sanctuary-header' : ''
         }`}
       >
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-3">
+          <div className="relative z-[110] flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={() => {
@@ -466,7 +475,7 @@ export default function App() {
               className="flex min-w-0 items-center gap-3 text-left"
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#2F5D4A] text-[#F8F4DD] shadow-sm">
-                <Compass className="h-5 w-5" />
+                <TreePine className="h-5 w-5" />
               </span>
               <span className="min-w-0">
                 <span className="block truncate font-serif text-lg font-semibold text-[#243C32]">
@@ -482,7 +491,7 @@ export default function App() {
               <div
                 role="group"
                 aria-label="视觉皮肤"
-                className="relative shrink-0"
+                className="relative z-[90] shrink-0"
                 ref={themeMenuRef}
               >
                 <button
@@ -510,8 +519,9 @@ export default function App() {
                 <div
                   role="menu"
                   aria-label="选择皮肤"
-                  className={`absolute right-0 top-full z-[80] mt-2 w-[190px] overflow-hidden rounded-lg border border-[#DDE5D6] p-2 text-xs shadow-[0_12px_32px_rgba(21,29,59,0.08)] transition-all duration-150 ${
-                    themeMenuOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0'
+                  onMouseDown={(event) => event.stopPropagation()}
+                  className={`absolute right-0 top-full z-[120] mt-2 w-[190px] overflow-hidden rounded-lg border border-[#DDE5D6] p-2 text-xs shadow-[0_12px_32px_rgba(21,29,59,0.08)] transition-all duration-150 ${
+                    themeMenuOpen ? 'pointer-events-auto visible translate-y-0 opacity-100' : 'pointer-events-none invisible -translate-y-1 opacity-0'
                   }`}
                   style={{
                     background: 'rgba(255, 253, 247, 0.96)',
@@ -538,7 +548,7 @@ export default function App() {
                         }`}
                       >
                         <span className="flex shrink-0 items-center gap-[3px]" aria-hidden="true">
-                          {option.swatches.slice(0, option.id === 'sanctuary' ? 5 : 3).map((color) => (
+                          {option.swatches.slice(0, option.id === 'sanctuary' || option.id === 'hockneySummer' ? 5 : 3).map((color) => (
                             <span
                               key={color}
                               className="h-1.5 w-1.5 rounded-full ring-1 ring-inset ring-black/5"
@@ -564,7 +574,7 @@ export default function App() {
           </div>
 
           <nav
-            className={`flex gap-1 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] p-1 text-xs shadow-sm shadow-emerald-950/5 ${
+            className={`relative z-10 flex gap-1 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] p-1 text-xs shadow-sm shadow-emerald-950/5 ${
               isSanctuary ? 'sanctuary-nav' : ''
             }`}
           >
@@ -618,10 +628,10 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <main className="mx-auto max-w-6xl px-4 py-7 sm:px-6 lg:px-8">
+      <main className={`mx-auto max-w-6xl px-4 py-7 sm:px-6 lg:px-8 ${isHockneySummer && showHome ? 'hockney-summer-home-main' : isHockney && showHome ? 'hockney-home-main' : ''}`}>
         {showHome && (
-          <section className="space-y-8">
-            <section className="space-y-3">
+          <section className={isHockneySummer ? 'hockney-summer-home space-y-6' : isHockney ? 'hockney-home space-y-7' : 'space-y-8'}>
+            <section className={isHockneySummer ? 'hockney-summer-map-hero space-y-3' : isHockney ? 'hockney-map-hero space-y-3' : 'space-y-3'}>
               <SectionHeading
                 title="探索地图"
                 description="基地位置分布图，按发现的先后顺序编号。鼠标悬停速览，点击进入基地。"
@@ -632,17 +642,18 @@ export default function App() {
                 onSelectBase={setSelectedBaseId}
                 latestLogPerBase={latestLogPerBase}
                 isHockney={isHockney}
+                isHockneySummer={isHockneySummer}
                 isSanctuary={isSanctuary}
               />
             </section>
 
-            <section className="space-y-3">
+            <section className={isHockneySummer ? 'hockney-summer-notes-section space-y-3' : 'space-y-3'}>
               <SectionHeading
                 title="基地卡片"
                 description="每张卡片展示该基地的最新记录和照片。点击查看该基地的所有日志。"
               />
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className={isHockneySummer ? 'hockney-summer-notes-grid' : 'grid gap-4 md:grid-cols-2 lg:grid-cols-3'}>
                 {bases.map((base) => (
                   <BaseNoteCard
                     key={base.id}
@@ -650,6 +661,7 @@ export default function App() {
                     latestLog={latestLogPerBase[base.id]}
                     onClick={() => setSelectedBaseId(base.id)}
                     isHockney={isHockney}
+                    isHockneySummer={isHockneySummer}
                     isSanctuary={isSanctuary}
                     palette={sanctuaryPaletteForBase(base.id)}
                   />
@@ -659,6 +671,7 @@ export default function App() {
                   latestLog={latestLogPerBase[ROADSIDE_LOCATION_ID]}
                   onClick={() => setSelectedBaseId(ROADSIDE_LOCATION_ID)}
                   isHockney={isHockney}
+                  isHockneySummer={isHockneySummer}
                   isSanctuary={isSanctuary}
                   palette={sanctuaryPaletteForBase(ROADSIDE_LOCATION_ID)}
                 />
@@ -683,10 +696,10 @@ export default function App() {
         )}
 
         {activeTab === 'timeline' && (
-          <section className="space-y-5">
+          <section className={isHockneySummer ? 'hockney-summer-page space-y-5' : 'space-y-5'}>
             <div
               className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7]/90 p-3 shadow-sm shadow-emerald-950/5 backdrop-blur ${
-                isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
+                isHockneySummer ? 'hockney-summer-panel' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
               }`}
             >
               <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-[minmax(260px,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
@@ -697,7 +710,9 @@ export default function App() {
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="搜索记录、天气或标签"
-                    className="h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-[#8A987E] focus:border-[#7FA06E] focus:bg-[#FFFDF7]"
+                    className={`h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-[#8A987E] focus:border-[#7FA06E] focus:bg-[#FFFDF7] ${
+                      isHockneySummer ? 'hockney-summer-field' : ''
+                    }`}
                   />
                 </label>
                 <label className="group relative">
@@ -706,7 +721,9 @@ export default function App() {
                     type="date"
                     value={filterDate}
                     onChange={(event) => setFilterDate(event.target.value)}
-                    className="h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7]"
+                    className={`h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7] ${
+                      isHockneySummer ? 'hockney-summer-field' : ''
+                    }`}
                   />
                 </label>
                 <label className="group relative">
@@ -714,7 +731,9 @@ export default function App() {
                   <select
                     value={filterBaseId}
                     onChange={(event) => setFilterBaseId(event.target.value)}
-                    className="h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7]"
+                    className={`h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7] ${
+                      isHockneySummer ? 'hockney-summer-field' : ''
+                    }`}
                   >
                     <option value="all">所有地点</option>
                     {bases.map((base) => (
@@ -730,7 +749,9 @@ export default function App() {
                   <select
                     value={filterWeather}
                     onChange={(event) => setFilterWeather(event.target.value)}
-                    className="h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7]"
+                    className={`h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7] ${
+                      isHockneySummer ? 'hockney-summer-field' : ''
+                    }`}
                   >
                     <option value="all">所有天气</option>
                     <option value="sunny">晴</option>
@@ -743,7 +764,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-xs text-[#6B7E65]">
+            <div className={`flex items-center gap-2 text-xs text-[#6B7E65] ${isHockneySummer ? 'hockney-summer-filter-count' : ''}`}>
               <Filter className="h-4 w-4" />
               找到 {filteredLogs.length} 条记录
             </div>
@@ -762,6 +783,7 @@ export default function App() {
                     getWeatherIcon={getWeatherIcon}
                     isEditing={isEditing}
                     isHockney={isHockney}
+                    isHockneySummer={isHockneySummer}
                     isSanctuary={isSanctuary}
                     palette={sanctuaryPaletteForBase(log.baseId)}
                     onOpenBase={() => {
@@ -777,7 +799,7 @@ export default function App() {
         )}
 
         {activeTab === 'stats' && (
-          <NatureStats logs={logs} bases={bases} isHockney={isHockney} isSanctuary={isSanctuary} />
+          <NatureStats logs={logs} bases={bases} isHockney={isHockney} isHockneySummer={isHockneySummer} isSanctuary={isSanctuary} />
         )}
       </main>
 
@@ -1058,9 +1080,10 @@ const BaseNoteCard: React.FC<{
   latestLog?: WalkLog;
   onClick: () => void;
   isHockney?: boolean;
+  isHockneySummer?: boolean;
   isSanctuary?: boolean;
   palette?: BasePalette;
-}> = ({ base, latestLog, onClick, isHockney = false, isSanctuary = false, palette }) => {
+}> = ({ base, latestLog, onClick, isHockney = false, isHockneySummer = false, isSanctuary = false, palette }) => {
   const cardImage = latestLog?.photos?.filter(Boolean)[0] ?? base.coverImage;
   const summary = latestLog?.content
     ? `“${shortText(latestLog.content, 42)}”`
@@ -1072,7 +1095,7 @@ const BaseNoteCard: React.FC<{
       type="button"
       onClick={onClick}
       className={`group flex h-full w-full flex-col overflow-hidden rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] text-left shadow-sm shadow-emerald-950/5 transition-colors hover:border-[#BFD1B8] hover:bg-[#F9FAF2] ${
-        isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
+        isHockneySummer ? 'hockney-summer-note-card' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
       }`}
       style={
         isSanctuary && palette
@@ -1092,7 +1115,7 @@ const BaseNoteCard: React.FC<{
       )}
       <span
         className={`block h-40 w-full flex-none ${
-          isHockney ? 'hockney-image-frame' : isSanctuary ? 'sanctuary-image-frame' : ''
+          isHockneySummer ? 'hockney-summer-note-image' : isHockney ? 'hockney-image-frame' : isSanctuary ? 'sanctuary-image-frame' : ''
         }`}
       >
         <img
@@ -1326,6 +1349,7 @@ interface LogCardProps {
   getWeatherIcon: (weather: string) => React.ReactNode;
   isEditing: boolean;
   isHockney?: boolean;
+  isHockneySummer?: boolean;
   isSanctuary?: boolean;
   palette?: BasePalette;
   onOpenBase?: () => void;
@@ -1338,6 +1362,7 @@ const LogCard: React.FC<LogCardProps> = ({
   getWeatherIcon,
   isEditing,
   isHockney = false,
+  isHockneySummer = false,
   isSanctuary = false,
   palette,
   onOpenBase,
@@ -1367,7 +1392,7 @@ const LogCard: React.FC<LogCardProps> = ({
     <div className="relative" ref={actionsRef}>
       <article
         className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-4 pr-12 shadow-sm shadow-emerald-950/5 xl:pr-4 ${
-          isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-log-card' : ''
+          isHockneySummer ? 'hockney-summer-log-card' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-log-card' : ''
         }`}
         style={
           isSanctuary && palette
@@ -1381,11 +1406,11 @@ const LogCard: React.FC<LogCardProps> = ({
       >
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="flex flex-wrap items-center gap-2 text-xs text-[#6B7E65]">
-          <span className="inline-flex items-center gap-1 rounded-md bg-[#EEF4E8] px-2 py-1 font-mono text-[#5B7055]">
+          <span className={`inline-flex items-center gap-1 rounded-md bg-[#EEF4E8] px-2 py-1 font-mono text-[#5B7055] ${isHockneySummer ? 'hockney-summer-chip' : ''}`}>
             <Calendar className="h-3.5 w-3.5" />
             {formatDate(log.date)}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-md bg-[#F4F0E3] px-2 py-1 text-[#6A6046]">
+          <span className={`inline-flex items-center gap-1 rounded-md bg-[#F4F0E3] px-2 py-1 text-[#6A6046] ${isHockneySummer ? 'hockney-summer-chip hockney-summer-chip-pink' : ''}`}>
             {getWeatherIcon(log.weather)}
             {log.weatherText}
           </span>
@@ -1394,7 +1419,7 @@ const LogCard: React.FC<LogCardProps> = ({
               type="button"
               onClick={onOpenBase}
               className={`rounded-md bg-[#EEF4E8] px-2 py-1 text-[#4D6B50] transition-colors hover:bg-[#E1ECD9] ${
-                isSanctuary ? 'sanctuary-base-tag' : ''
+                isHockneySummer ? 'hockney-summer-chip hockney-summer-chip-green' : isSanctuary ? 'sanctuary-base-tag' : ''
               }`}
               style={
                 isSanctuary && palette
@@ -1411,7 +1436,7 @@ const LogCard: React.FC<LogCardProps> = ({
           )}
         </div>
       </div>
-      <p className="whitespace-pre-line font-serif text-base leading-8 text-stone-800">
+      <p className={`whitespace-pre-line font-serif text-base leading-8 text-stone-800 ${isHockneySummer ? 'hockney-summer-log-text' : ''}`}>
         {log.content}
       </p>
       <LogPhotoGrid photos={photos} date={log.date} isHockney={isHockney} />
@@ -1419,7 +1444,7 @@ const LogCard: React.FC<LogCardProps> = ({
         {log.tags.map((tag) => (
           <span
             key={tag}
-            className="rounded-md border border-transparent bg-[#EEF4E8] px-2 py-1 text-xs text-[#5B7055]"
+            className={`rounded-md border border-transparent bg-[#EEF4E8] px-2 py-1 text-xs text-[#5B7055] ${isHockneySummer ? 'hockney-summer-tag' : ''}`}
             style={
               isSanctuary && palette
                 ? {
