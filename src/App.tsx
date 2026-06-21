@@ -690,6 +690,7 @@ export default function App() {
             onBack={() => setSelectedBaseId(null)}
             onDeleteLog={handleDeleteLog}
             isHockney={isHockney}
+            isHockneySummer={isHockneySummer}
             isSanctuary={isSanctuary}
             palette={sanctuaryPaletteForBase(activeBaseDetails.id)}
           />
@@ -1187,12 +1188,13 @@ const BaseDetailCover: React.FC<{
   src: string;
   alt: string;
   isHockney?: boolean;
+  isHockneySummer?: boolean;
   isSanctuary?: boolean;
-}> = ({ src, alt, isHockney = false, isSanctuary = false }) => {
+}> = ({ src, alt, isHockney = false, isHockneySummer = false, isSanctuary = false }) => {
   return (
     <figure
       className={`h-44 w-full self-start overflow-hidden bg-[#F4F7ED] md:h-64 md:max-h-64 ${
-        isHockney ? 'hockney-image-frame' : isSanctuary ? 'sanctuary-image-frame' : ''
+        isHockneySummer ? 'hockney-summer-detail-image' : isHockney ? 'hockney-image-frame' : isSanctuary ? 'sanctuary-image-frame' : ''
       }`}
     >
       <img
@@ -1213,6 +1215,7 @@ interface BaseDetailProps {
   onBack: () => void;
   onDeleteLog: (id: string) => void;
   isHockney?: boolean;
+  isHockneySummer?: boolean;
   isSanctuary?: boolean;
   palette?: BasePalette;
 }
@@ -1225,18 +1228,19 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
   onBack,
   onDeleteLog,
   isHockney = false,
+  isHockneySummer = false,
   isSanctuary = false,
   palette
 }) => {
   const accent = palette?.accent ?? '#2F5D4A';
 
   return (
-    <section className="space-y-3">
+    <section className={isHockneySummer ? 'hockney-summer-page space-y-3' : 'space-y-3'}>
       <button
         type="button"
         onClick={onBack}
         className={`relative z-10 inline-flex items-center gap-1.5 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-1.5 text-xs font-medium text-[#5B7055] transition-colors hover:bg-[#EEF4E8] hover:text-[#2F5D4A] ${
-          isSanctuary ? 'sanctuary-back-button' : ''
+          isHockneySummer ? 'hockney-summer-back-button' : isSanctuary ? 'sanctuary-back-button' : ''
         }`}
         style={
           isSanctuary && palette
@@ -1256,7 +1260,7 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
 
       <div
         className={`overflow-hidden rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] shadow-sm shadow-emerald-950/5 ${
-          isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
+          isHockneySummer ? 'hockney-summer-detail-card' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
         }`}
         style={
           isSanctuary && palette
@@ -1274,14 +1278,17 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
             src={base.coverImage}
             alt={base.title}
             isHockney={isHockney}
+            isHockneySummer={isHockneySummer}
             isSanctuary={isSanctuary}
           />
           <div className="p-4 sm:p-5">
             <div>
               <div>
-                <p className="text-xs text-[#7D8C74]">{base.subtitle}</p>
+                <p className={`text-xs text-[#7D8C74] ${isHockneySummer ? 'hockney-summer-detail-subtitle' : ''}`}>{base.subtitle}</p>
                 <h1
-                  className="mt-0.5 flex items-center gap-2 font-serif text-2xl font-semibold text-[#243C32] sm:text-3xl"
+                  className={`mt-0.5 flex items-center gap-2 font-serif text-2xl font-semibold text-[#243C32] sm:text-3xl ${
+                    isHockneySummer ? 'hockney-summer-detail-title' : ''
+                  }`}
                   style={isSanctuary ? { color: accent } : undefined}
                 >
                   {isSanctuary && (
@@ -1295,11 +1302,11 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
                 </h1>
               </div>
             </div>
-            <p className="mt-2 flex items-center gap-1.5 text-xs text-[#6B7E65]">
+            <p className={`mt-2 flex items-center gap-1.5 text-xs text-[#6B7E65] ${isHockneySummer ? 'hockney-summer-detail-meta' : ''}`}>
               <MapPin className="h-4 w-4" />
               {base.location}
             </p>
-            <p className="mt-3 font-serif text-sm leading-6 text-stone-800 sm:text-base sm:leading-7">
+            <p className={`mt-3 font-serif text-sm leading-6 text-stone-800 sm:text-base sm:leading-7 ${isHockneySummer ? 'hockney-summer-detail-description' : ''}`}>
               {base.description}
             </p>
           </div>
@@ -1308,7 +1315,7 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
 
       <div className="space-y-2">
         <h2
-          className="font-serif text-xl font-semibold text-[#243C32]"
+          className={`font-serif text-xl font-semibold text-[#243C32] ${isHockneySummer ? 'hockney-summer-section-title' : ''}`}
           style={isSanctuary ? { color: accent } : undefined}
         >
           这个地点的记录
@@ -1319,7 +1326,7 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
         {logs.length === 0 ? (
           <div
             className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-8 text-center text-sm text-[#6B7E65] ${
-              isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
+              isHockneySummer ? 'hockney-summer-panel' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
             }`}
           >
             还没有记录。
@@ -1332,6 +1339,7 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
               getWeatherIcon={getWeatherIcon}
               isEditing={isEditing}
               isHockney={isHockney}
+              isHockneySummer={isHockneySummer}
               isSanctuary={isSanctuary}
               palette={palette}
               onDelete={() => onDeleteLog(log.id)}

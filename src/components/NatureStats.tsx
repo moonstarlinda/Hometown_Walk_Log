@@ -395,7 +395,7 @@ export default function NatureStats({
           }`}
         >
           <h3 className="mb-4 flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
-            <span className={`rounded-md p-1 ${isSanctuary ? 'bg-[color-mix(in_srgb,#4E8B5B_12%,white)] text-[#4E8B5B]' : 'bg-[#EEF4E8] text-[#2F5D4A]'}`}>
+            <span className={`rounded-md p-1 ${isHockneySummer ? 'hockney-summer-heading-icon' : isSanctuary ? 'bg-[color-mix(in_srgb,#4E8B5B_12%,white)] text-[#4E8B5B]' : 'bg-[#EEF4E8] text-[#2F5D4A]'}`}>
               <Route className="h-4 w-4" />
             </span>
             散步日志纵览
@@ -455,7 +455,14 @@ export default function NatureStats({
                             index < activeFootsteps ? 'text-[#2F6C49]' : 'text-[#BFD1B8]/55'
                           }`}
                           style={
-                            isSanctuary && baseColor
+                            isHockneySummer
+                              ? {
+                                  color:
+                                    index < activeFootsteps
+                                      ? '#0057D9'
+                                      : 'rgba(0, 87, 217, 0.18)'
+                                }
+                              : isSanctuary && baseColor
                               ? {
                                   color:
                                     index < activeFootsteps
@@ -493,7 +500,7 @@ export default function NatureStats({
           }`}
         >
           <h3 className="mb-4 flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
-            <span className={`rounded-md p-1 ${isSanctuary ? 'bg-[color-mix(in_srgb,#7A5C8C_12%,white)] text-[#7A5C8C]' : 'bg-[#F4F0E3] text-[#7A693A]'}`}>
+            <span className={`rounded-md p-1 ${isHockneySummer ? 'hockney-summer-heading-icon' : isSanctuary ? 'bg-[color-mix(in_srgb,#7A5C8C_12%,white)] text-[#7A5C8C]' : 'bg-[#F4F0E3] text-[#7A693A]'}`}>
               <Leaf className="h-4 w-4" />
             </span>
             自然意象
