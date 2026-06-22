@@ -44,7 +44,7 @@ export default function AddBaseModal({ onClose, onAddBase }: AddBaseModalProps) 
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-xs">
+    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-xs">
       <div className="bg-[#FAF9F5] border border-stone-200 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="p-5 border-b border-stone-200/60 bg-white flex justify-between items-center">

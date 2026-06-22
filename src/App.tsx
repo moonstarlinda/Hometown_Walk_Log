@@ -252,6 +252,7 @@ export default function App() {
   const isHockneySummer = theme === 'hockneySummer';
   const isSanctuary = theme === 'sanctuary';
   const isAuthor = Boolean(AUTHOR_USER_ID && authUser?.id === AUTHOR_USER_ID);
+  const hasOpenModal = showAddLog || showAddBase || showAuthorLogin;
 
   useEffect(() => {
     let isMounted = true;
@@ -547,14 +548,14 @@ export default function App() {
         }`}
       >
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="relative z-[110] flex items-center justify-between gap-3">
+          <div className="relative z-[110] flex flex-wrap items-center justify-between gap-3">
             <button
               type="button"
               onClick={() => {
                 setSelectedBaseId(null);
                 setActiveTab('bases');
               }}
-              className="flex min-w-0 items-center gap-3 text-left"
+              className="flex min-w-0 flex-1 items-center gap-3 text-left sm:flex-none"
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#2F5D4A] text-[#F8F4DD] shadow-sm">
                 <TreePine className="h-5 w-5" />
@@ -569,11 +570,11 @@ export default function App() {
               </span>
             </button>
 
-            <div className="flex items-center gap-2">
+            <div className="order-3 flex w-full min-w-0 items-center gap-2 sm:order-none sm:w-auto sm:shrink-0">
               <div
                 role="group"
                 aria-label="视觉皮肤"
-                className="relative z-[90] shrink-0"
+                className="relative z-[90] min-w-0 flex-1 sm:flex-none"
                 ref={themeMenuRef}
               >
                 <button
@@ -583,7 +584,7 @@ export default function App() {
                   aria-label={`当前皮肤：${activeThemeOption.title}`}
                   title={`当前使用：${activeThemeOption.title}`}
                   onClick={() => setThemeMenuOpen((current) => !current)}
-                  className={`inline-flex items-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] shadow-sm transition-colors hover:bg-[#EEF4E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78A68B]/35 ${
+                  className={`inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] shadow-sm transition-colors hover:bg-[#EEF4E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78A68B]/35 sm:w-auto ${
                     themeMenuOpen
                       ? 'ring-1 ring-[#D9E5D1]'
                       : ''
@@ -647,7 +648,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={replayIntro}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8]"
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8]"
               >
                 <RefreshCw className="h-4 w-4" />
                 重播开场
@@ -657,7 +658,7 @@ export default function App() {
                   type="button"
                   onClick={handleAuthorSignOut}
                   title={authUser?.email ? `当前作者：${authUser.email}` : '退出作者登录'}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8]"
+                  className="order-2 inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8] sm:order-none"
                 >
                   <LogOut className="h-4 w-4" />
                   退出
@@ -666,7 +667,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowAuthorLogin(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8]"
+                  className="order-2 inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8] sm:order-none"
                 >
                   <LogIn className="h-4 w-4" />
                   作者
@@ -712,16 +713,30 @@ export default function App() {
       </header>
 
       {isAuthor && (
-        <AuthorTools
-          isEditing={isEditing}
-          onAddLog={() => setShowAddLog(true)}
-        onAddBase={() => setShowAddBase(true)}
-        onToggleEditing={() => setIsEditing((current) => !current)}
-        onResetData={handleResetData}
-        isHockney={isHockney}
-        isHockneySummer={isHockneySummer}
-        isSanctuary={isSanctuary}
-      />
+        <>
+          <AuthorTools
+            isEditing={isEditing}
+            onAddLog={() => setShowAddLog(true)}
+            onAddBase={() => setShowAddBase(true)}
+            onToggleEditing={() => setIsEditing((current) => !current)}
+            onResetData={handleResetData}
+            isHockney={isHockney}
+            isHockneySummer={isHockneySummer}
+            isSanctuary={isSanctuary}
+          />
+          {!hasOpenModal && (
+            <MobileAuthorTools
+              isEditing={isEditing}
+              onAddLog={() => setShowAddLog(true)}
+              onAddBase={() => setShowAddBase(true)}
+              onToggleEditing={() => setIsEditing((current) => !current)}
+              onResetData={handleResetData}
+              isHockney={isHockney}
+              isHockneySummer={isHockneySummer}
+              isSanctuary={isSanctuary}
+            />
+          )}
+        </>
       )}
 
       <AnimatePresence>
@@ -733,7 +748,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <main className={`mx-auto max-w-6xl px-4 py-7 sm:px-6 lg:px-8 ${isHockneySummer && showHome ? 'hockney-summer-home-main' : isHockney && showHome ? 'hockney-home-main' : ''}`}>
+      <main className={`mx-auto max-w-6xl px-4 py-7 sm:px-6 lg:px-8 ${isAuthor ? 'pb-28 xl:pb-7' : ''} ${isHockneySummer && showHome ? 'hockney-summer-home-main' : isHockney && showHome ? 'hockney-home-main' : ''}`}>
         {isDataLoading && (
           <div className="mb-4 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-4 py-3 text-sm text-[#6B7E65] shadow-sm shadow-emerald-950/5">
             正在从 Supabase 读取散步记录...
@@ -1061,7 +1076,7 @@ const AuthorLoginModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-xs">
+    <div className="fixed inset-0 z-[130] flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-xs">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-sm rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-xl shadow-stone-900/10"
@@ -1235,7 +1250,7 @@ const SectionHeading: React.FC<{ title: string; description: string }> = ({
   );
 };
 
-const AuthorTools: React.FC<{
+type AuthorToolProps = {
   isEditing: boolean;
   onAddLog: () => void;
   onAddBase: () => void;
@@ -1244,7 +1259,20 @@ const AuthorTools: React.FC<{
   isHockney?: boolean;
   isHockneySummer?: boolean;
   isSanctuary?: boolean;
-}> = ({
+};
+
+function authorToolsThemeClass({
+  isHockney,
+  isHockneySummer,
+  isSanctuary
+}: Pick<AuthorToolProps, 'isHockney' | 'isHockneySummer' | 'isSanctuary'>) {
+  if (isHockneySummer) return 'hockney-summer-author-tools';
+  if (isHockney) return 'hockney-author-tools';
+  if (isSanctuary) return 'sanctuary-author-tools';
+  return '';
+}
+
+const AuthorTools: React.FC<AuthorToolProps> = ({
   isEditing,
   onAddLog,
   onAddBase,
@@ -1254,16 +1282,12 @@ const AuthorTools: React.FC<{
   isHockneySummer = false,
   isSanctuary = false
 }) => {
+  const themeClass = authorToolsThemeClass({ isHockney, isHockneySummer, isSanctuary });
+
   return (
     <aside
       className={`fixed top-28 z-30 hidden w-36 flex-col gap-2 xl:right-4 xl:flex 2xl:left-[calc(50%+36rem+1.5rem)] 2xl:right-auto ${
-        isHockneySummer
-          ? 'hockney-summer-author-tools'
-          : isHockney
-            ? 'hockney-author-tools'
-            : isSanctuary
-              ? 'sanctuary-author-tools'
-              : ''
+        themeClass
       }`}
     >
       <p className="px-1 text-[11px] font-medium text-[#7D8C74]">作者工具</p>
@@ -1305,6 +1329,64 @@ const AuthorTools: React.FC<{
         恢复默认
       </button>
     </aside>
+  );
+};
+
+const MobileAuthorTools: React.FC<AuthorToolProps> = ({
+  isEditing,
+  onAddLog,
+  onAddBase,
+  onToggleEditing,
+  onResetData,
+  isHockney = false,
+  isHockneySummer = false,
+  isSanctuary = false
+}) => {
+  const themeClass = authorToolsThemeClass({ isHockney, isHockneySummer, isSanctuary });
+
+  return (
+    <nav
+      aria-label="作者工具"
+      className={`author-mobile-tools fixed inset-x-3 bottom-3 z-[75] grid grid-cols-4 gap-2 rounded-xl border border-[#DDE5D6] bg-[#FFFDF7]/95 p-2 shadow-xl shadow-stone-900/10 backdrop-blur xl:hidden ${themeClass}`}
+    >
+      <button
+        type="button"
+        onClick={onAddLog}
+        className="inline-flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg bg-[#2F5D4A] px-2 py-2 text-[11px] font-medium leading-none text-[#FFFDF4] shadow-sm"
+      >
+        <Plus className="h-4 w-4" />
+        记录
+      </button>
+      <button
+        type="button"
+        onClick={onAddBase}
+        className="inline-flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-2 py-2 text-[11px] font-medium leading-none text-[#2F5D4A] shadow-sm"
+      >
+        <MapPin className="h-4 w-4" />
+        基地
+      </button>
+      <button
+        type="button"
+        onClick={onToggleEditing}
+        className={`inline-flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2 text-[11px] font-medium leading-none shadow-sm ${
+          isEditing
+            ? 'border-[#2F5D4A] bg-[#EEF4E8] text-[#2F5D4A]'
+            : 'border-[#C9D9C3] bg-[#FFFDF7] text-[#2F5D4A]'
+        }`}
+      >
+        <Pencil className="h-4 w-4" />
+        {isEditing ? '完成' : '编辑'}
+      </button>
+      <button
+        type="button"
+        onClick={onResetData}
+        className="inline-flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-2 py-2 text-[11px] font-medium leading-none text-[#6B7E65] shadow-sm"
+        title="恢复默认"
+      >
+        <RotateCcw className="h-4 w-4" />
+        恢复
+      </button>
+    </nav>
   );
 };
 
