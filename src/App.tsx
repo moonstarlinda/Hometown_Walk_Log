@@ -39,7 +39,7 @@ import AddLogModal from './components/AddLogModal';
 import NatureStats from './components/NatureStats';
 import WalkMap from './components/WalkMap';
 import openingWalkingIntoForest from './assets/images/opening_walking_into_the_forest.jpeg';
-import { supabase } from './lib/supabase';
+import { isSupabaseConfigured, supabase } from './lib/supabase';
 import {
   createBase,
   createLog,
@@ -255,6 +255,8 @@ export default function App() {
   const hasOpenModal = showAddLog || showAddBase || showAuthorLogin;
 
   useEffect(() => {
+    if (!supabase) return;
+
     let isMounted = true;
 
     supabase.auth.getSession().then(({ data }) => {
@@ -275,6 +277,8 @@ export default function App() {
   }, []);
 
   const handleAuthorSignOut = async () => {
+    if (!supabase) return;
+
     const { error } = await supabase.auth.signOut();
 
     if (error) {
@@ -303,7 +307,11 @@ export default function App() {
         if (!isMounted) return;
         setBases(INITIAL_BASES);
         setLogs(INITIAL_LOGS);
-        alert(`无法从 Supabase 读取数据，已临时显示本地示例数据。\n\n${formatSupabaseError(error)}`);
+        alert(
+          isSupabaseConfigured
+            ? `无法从 Supabase 读取数据，已临时显示本地示例数据。\n\n${formatSupabaseError(error)}`
+            : '缺少 Vercel 环境变量 VITE_SUPABASE_URL 或 VITE_SUPABASE_ANON_KEY，已临时显示本地示例数据。'
+        );
       } finally {
         if (isMounted) setIsDataLoading(false);
       }
@@ -1051,6 +1059,12 @@ const AuthorLoginModal: React.FC<{
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (!supabase) {
+      alert('缺少 Supabase 环境变量，暂时无法登录作者账号。');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -1788,9 +1802,19 @@ const LogCard: React.FC<LogCardProps> = ({
           onClick={() => setShowActions((current) => !current)}
           title="更多操作"
           aria-expanded={showActions}
-          className="absolute right-3 top-3 rounded-md border border-transparent bg-[#FFFDF7] p-1.5 text-[#8A987E] shadow-sm transition-colors hover:border-[#DDE5D6] hover:bg-[#F1F5EA] hover:text-[#2F5D4A] xl:-right-11 xl:border-[#E5DED3]"
+          className="absolute right-3 top-3 hidden rounded-md border border-transparent bg-[#FFFDF7] p-1.5 text-[#8A987E] shadow-sm transition-colors hover:border-[#DDE5D6] hover:bg-[#F1F5EA] hover:text-[#2F5D4A] xl:block xl:-right-11 xl:border-[#E5DED3]"
         >
           <MoreHorizontal className="h-4 w-4" />
+        </button>
+      )}
+      {isEditing && (
+        <button
+          type="button"
+          onClick={onDelete}
+          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 shadow-sm transition-colors hover:bg-rose-100 xl:hidden"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          删除
         </button>
       )}
       {isEditing && showActions && (

@@ -29,6 +29,8 @@ type LogRow = {
 const apply = process.argv.includes('--apply');
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+const authorEmail = process.env.SUPABASE_AUTHOR_EMAIL;
+const authorPassword = process.env.SUPABASE_AUTHOR_PASSWORD;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env.local.');
@@ -128,26 +130,29 @@ async function main() {
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+  if (authorEmail && authorPassword) {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: authorEmail,
+      password: authorPassword
+    });
+
+    if (error) throw error;
+  } else {
+    console.log('\nNo SUPABASE_AUTHOR_EMAIL/PASSWORD found. Seed will use anon permissions.');
+  }
+
   const deleteLogsResult = await supabase.from('logs').delete().in('id', seedLogIds);
   if (deleteLogsResult.error) throw deleteLogsResult.error;
 
-  const existingBasesResult = await supabase.from('bases').select('id');
-  if (existingBasesResult.error) throw existingBasesResult.error;
-
-  const existingBaseIds = new Set(
-    (existingBasesResult.data ?? []).map((row) => String(row.id))
-  );
-  const missingBaseRows = baseRows.filter((row) => !existingBaseIds.has(row.id));
-
-  if (missingBaseRows.length > 0) {
-    const insertBasesResult = await supabase.from('bases').insert(missingBaseRows);
-    if (insertBasesResult.error) throw insertBasesResult.error;
-  }
+  const upsertBasesResult = await supabase
+    .from('bases')
+    .upsert(baseRows, { onConflict: 'id' });
+  if (upsertBasesResult.error) throw upsertBasesResult.error;
 
   const insertLogsResult = await supabase.from('logs').insert(logRows);
   if (insertLogsResult.error) throw insertLogsResult.error;
 
-  console.log(`\nSeed complete. Inserted ${missingBaseRows.length} missing bases and ${logRows.length} logs.`);
+  console.log(`\nSeed complete. Upserted ${baseRows.length} bases and inserted ${logRows.length} logs.`);
 }
 
 main().catch((error) => {

@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
 import { Base, WalkLog } from '../types';
 
 type BaseRow = {
@@ -46,6 +46,7 @@ function mapLog(row: LogRow): WalkLog {
 }
 
 export async function getBases(): Promise<Base[]> {
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('bases')
     .select('id,title,subtitle,description,location,cover_image')
@@ -56,6 +57,7 @@ export async function getBases(): Promise<Base[]> {
 }
 
 export async function getLogs(): Promise<WalkLog[]> {
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('logs')
     .select('id,base_id,date,weather,weather_text,tags,photos,content')
@@ -66,6 +68,7 @@ export async function getLogs(): Promise<WalkLog[]> {
 }
 
 export async function createBase(base: Base): Promise<Base> {
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('bases')
     .insert({
@@ -84,6 +87,7 @@ export async function createBase(base: Base): Promise<Base> {
 }
 
 export async function createLog(log: WalkLog): Promise<WalkLog> {
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('logs')
     .insert({
@@ -104,7 +108,15 @@ export async function createLog(log: WalkLog): Promise<WalkLog> {
 }
 
 export async function deleteLog(logId: string): Promise<void> {
-  const { error } = await supabase.from('logs').delete().eq('id', logId);
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('logs')
+    .delete()
+    .eq('id', logId)
+    .select('id');
 
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('没有删除任何记录。请确认你已用作者账号登录，并且 RLS delete 策略允许当前用户删除 logs。');
+  }
 }
