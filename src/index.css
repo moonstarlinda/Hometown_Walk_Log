@@ -64,6 +64,33 @@ html {
     linear-gradient(135deg, rgba(225, 250, 255, 0.9), rgba(226, 255, 239, 0.88));
 }
 
+.hockney-author-tools p {
+  color: #147ea3;
+  font-weight: 700;
+}
+
+.hockney-author-tools button {
+  border: 1px solid rgba(43, 153, 184, 0.32);
+  background: rgba(255, 255, 255, 0.62);
+  color: #16708f;
+  box-shadow: 0 10px 24px rgba(37, 142, 184, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.hockney-author-tools button:hover {
+  border-color: rgba(31, 156, 193, 0.48);
+  background: rgba(223, 247, 255, 0.82);
+  color: #0f6e91;
+}
+
+.hockney-author-tools button:first-of-type,
+.hockney-author-tools button[class*="bg-[#EEF4E8]"] {
+  border-color: rgba(31, 156, 193, 0.5);
+  background: linear-gradient(135deg, rgba(99, 201, 232, 0.82), rgba(223, 255, 242, 0.9));
+  color: #075f80;
+}
+
 .hockney-summer-root {
   position: relative;
   isolation: isolate;
@@ -532,6 +559,49 @@ g:hover .hockney-summer-map-marker {
   color: #0057d9;
 }
 
+.hockney-summer-author-tools {
+  z-index: 40;
+}
+
+.hockney-summer-author-tools p {
+  color: #0057d9;
+  font-weight: 900;
+}
+
+.hockney-summer-author-tools button {
+  border: 2px solid #0057d9;
+  border-radius: 0;
+  background: #fff8a6;
+  color: #0057d9;
+  box-shadow: 5px 5px 0 rgba(0, 87, 217, 0.18);
+  font-weight: 900;
+}
+
+.hockney-summer-author-tools button:hover {
+  background: #fff22e;
+  color: #0057d9;
+  box-shadow: 6px 6px 0 rgba(243, 56, 200, 0.34);
+  transform: translate(-1px, -1px);
+}
+
+.hockney-summer-author-tools button:first-of-type,
+.hockney-summer-author-tools button[class*="bg-[#EEF4E8]"] {
+  background: #16a9d8;
+  color: #ffffff;
+  box-shadow: 5px 5px 0 #f338c8;
+}
+
+.hockney-summer-author-tools button:first-of-type:hover,
+.hockney-summer-author-tools button[class*="bg-[#EEF4E8]"]:hover {
+  background: #f338c8;
+  color: #ffffff;
+  box-shadow: 5px 5px 0 #0057d9;
+}
+
+.hockney-summer-author-tools svg {
+  color: currentColor;
+}
+
 @media (min-width: 768px) {
   .hockney-summer-notes-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -819,6 +889,26 @@ g:hover .hockney-summer-map-marker {
 
 .sanctuary-spectrum-card::before {
   content: none;
+}
+
+.sanctuary-author-tools p {
+  color: #5c624d;
+  font-weight: 700;
+}
+
+.sanctuary-author-tools button {
+  border-color: rgba(150, 141, 118, 0.28);
+  background: rgba(255, 253, 246, 0.92);
+  color: #5c624d;
+  box-shadow:
+    0 10px 24px rgba(71, 61, 44, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.72) inset;
+}
+
+.sanctuary-author-tools button:hover {
+  border-color: rgba(78, 139, 91, 0.28);
+  background: rgba(244, 248, 236, 0.96);
+  color: #4e8b5b;
 }
 
 .sanctuary-metric-card {

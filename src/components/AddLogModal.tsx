@@ -14,6 +14,37 @@ interface AddLogModalProps {
   onAddLog: (log: Omit<WalkLog, 'id'>) => void;
 }
 
+type Weather = WalkLog['weather'];
+
+function inferWeatherFromText(selectedWeather: Weather, weatherText: string): Weather {
+  const text = weatherText.trim();
+
+  if (selectedWeather !== 'sunny' || !text) return selectedWeather;
+  if (/[雨雪霰雹]/.test(text)) return 'rainy';
+  if (/[风風吹]/.test(text)) return 'windy';
+  if (/[阴陰]/.test(text)) return 'overcast';
+  if (/[云雲]/.test(text)) return 'cloudy';
+
+  return selectedWeather;
+}
+
+function defaultTagForWeather(weather: Weather) {
+  switch (weather) {
+    case 'sunny':
+      return '烈日晴天';
+    case 'cloudy':
+      return '流云缓行';
+    case 'rainy':
+      return '淅沥小雨';
+    case 'overcast':
+      return '阴天漫步';
+    case 'windy':
+      return '风声穿林';
+    default:
+      return '偶有随感';
+  }
+}
+
 export default function AddLogModal({
   bases,
   selectedBaseId,
@@ -61,9 +92,15 @@ export default function AddLogModal({
       return;
     }
     
+    const submittedWeatherText = weatherText.trim() || '温润天气';
+    const submittedWeather = inferWeatherFromText(weather, submittedWeatherText);
+
     // Add default tags if none chosen to preserve visual beauty
     let tagsToSubmit = [...selectedTags];
     if (tagsToSubmit.length === 0) {
+      tagsToSubmit.push(defaultTagForWeather(submittedWeather));
+    }
+    if (false && tagsToSubmit.length === 0) {
       if (weather === 'sunny') tagsToSubmit.push('烈日晴天');
       else if (weather === 'cloudy') tagsToSubmit.push('清云悠悠');
       else if (weather === 'rainy') tagsToSubmit.push('淅沥小雨');
@@ -78,8 +115,8 @@ export default function AddLogModal({
     onAddLog({
       baseId,
       date,
-      weather,
-      weatherText: weatherText.trim() || '温润气候',
+      weather: submittedWeather,
+      weatherText: submittedWeatherText,
       tags: tagsToSubmit,
       ...(photos.length > 0 ? { photos } : {}),
       content: content.trim()

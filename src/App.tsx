@@ -15,6 +15,8 @@ import {
   CloudRain,
   Compass,
   Filter,
+  LogIn,
+  LogOut,
   Map as MapIcon,
   MapPin,
   MoreHorizontal,
@@ -37,11 +39,18 @@ import AddLogModal from './components/AddLogModal';
 import NatureStats from './components/NatureStats';
 import WalkMap from './components/WalkMap';
 import openingWalkingIntoForest from './assets/images/opening_walking_into_the_forest.jpeg';
+import { supabase } from './lib/supabase';
+import {
+  createBase,
+  createLog,
+  deleteLog,
+  getBases,
+  getLogs
+} from './services/walkLogService';
 
-const BASES_STORAGE_KEY = 'hometown_bases';
-const LOGS_STORAGE_KEY = 'hometown_logs';
 const INTRO_STORAGE_KEY = 'hometown_opening_intro_seen';
 const ROADSIDE_LOCATION_ID = 'roadside-observations';
+const AUTHOR_USER_ID = import.meta.env.VITE_AUTHOR_USER_ID ?? '';
 type Theme = 'default' | 'hockney' | 'hockneySummer' | 'sanctuary';
 type BasePalette = {
   accent: string;
@@ -203,6 +212,20 @@ function mergeInitialItems<T extends { id: string }>(savedItems: T[], initialIte
   return [...refreshedSavedItems, ...missingInitialItems];
 }
 
+function formatSupabaseError(error: unknown) {
+  if (!error || typeof error !== 'object') return String(error);
+
+  const errorRecord = error as Record<string, unknown>;
+  const parts = [
+    typeof errorRecord.message === 'string' ? errorRecord.message : null,
+    typeof errorRecord.code === 'string' ? `code: ${errorRecord.code}` : null,
+    typeof errorRecord.details === 'string' ? `details: ${errorRecord.details}` : null,
+    typeof errorRecord.hint === 'string' ? `hint: ${errorRecord.hint}` : null
+  ].filter(Boolean);
+
+  return parts.join('\n');
+}
+
 export default function App() {
   const prefersReducedMotion = useReducedMotion();
   const [bases, setBases] = useState<Base[]>([]);
@@ -213,11 +236,14 @@ export default function App() {
   const [showAddBase, setShowAddBase] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
+  const [showAuthorLogin, setShowAuthorLogin] = useState(false);
+  const [authUser, setAuthUser] = useState<{ id: string; email?: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [filterBaseId, setFilterBaseId] = useState('all');
   const [filterWeather, setFilterWeather] = useState('all');
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [theme, setTheme] = useState<Theme>('default');
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
@@ -225,24 +251,68 @@ export default function App() {
   const isHockney = theme === 'hockney';
   const isHockneySummer = theme === 'hockneySummer';
   const isSanctuary = theme === 'sanctuary';
+  const isAuthor = Boolean(AUTHOR_USER_ID && authUser?.id === AUTHOR_USER_ID);
 
   useEffect(() => {
-    const savedBases = normalizeSavedBases(parseSavedItems(localStorage.getItem(BASES_STORAGE_KEY)));
-    const savedLogs = normalizeSavedLogs(parseSavedItems(localStorage.getItem(LOGS_STORAGE_KEY)));
+    let isMounted = true;
 
-    if (savedBases && savedLogs) {
-      const nextBases = mergeInitialItems(savedBases, INITIAL_BASES);
-      const nextLogs = mergeInitialItems(savedLogs, INITIAL_LOGS);
-      setBases(nextBases);
-      setLogs(nextLogs);
-      saveStateToStorage(nextBases, nextLogs);
+    supabase.auth.getSession().then(({ data }) => {
+      if (!isMounted) return;
+      const user = data.session?.user;
+      setAuthUser(user ? { id: user.id, email: user.email } : null);
+    });
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user;
+      setAuthUser(user ? { id: user.id, email: user.email } : null);
+    });
+
+    return () => {
+      isMounted = false;
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleAuthorSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      alert(`退出登录失败。\n\n${formatSupabaseError(error)}`);
       return;
     }
 
-    setBases(INITIAL_BASES);
-    setLogs(INITIAL_LOGS);
-    localStorage.setItem(BASES_STORAGE_KEY, JSON.stringify(INITIAL_BASES));
-    localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(INITIAL_LOGS));
+    setIsEditing(false);
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadWalkData() {
+      setIsDataLoading(true);
+
+      try {
+        const [remoteBases, remoteLogs] = await Promise.all([getBases(), getLogs()]);
+
+        if (!isMounted) return;
+        setBases(remoteBases);
+        setLogs(remoteLogs);
+      } catch (error) {
+        console.error('Failed to load walk data from Supabase.', error);
+
+        if (!isMounted) return;
+        setBases(INITIAL_BASES);
+        setLogs(INITIAL_LOGS);
+        alert(`无法从 Supabase 读取数据，已临时显示本地示例数据。\n\n${formatSupabaseError(error)}`);
+      } finally {
+        if (isMounted) setIsDataLoading(false);
+      }
+    }
+
+    loadWalkData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -298,11 +368,6 @@ export default function App() {
     };
   }, [themeMenuOpen]);
 
-  const saveStateToStorage = (nextBases: Base[], nextLogs: WalkLog[]) => {
-    localStorage.setItem(BASES_STORAGE_KEY, JSON.stringify(nextBases));
-    localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(nextLogs));
-  };
-
   const sortedLogs = useMemo(
     () => [...logs].sort((a, b) => b.date.localeCompare(a.date)),
     [logs]
@@ -348,17 +413,22 @@ export default function App() {
     });
   }, [filterBaseId, filterDate, filterWeather, searchQuery, sortedLogs]);
 
-  const handleAddLog = (newLogData: Omit<WalkLog, 'id'>) => {
-    const newLog: WalkLog = {
+  const handleAddLog = async (newLogData: Omit<WalkLog, 'id'>) => {
+    const logToCreate: WalkLog = {
       ...newLogData,
       id: `log-${Date.now()}`
     };
-    const nextLogs = [newLog, ...logs];
-    setLogs(nextLogs);
-    saveStateToStorage(bases, nextLogs);
-    setShowAddLog(false);
-    setSelectedBaseId(newLog.baseId);
-    setActiveTab('bases');
+
+    try {
+      const newLog = await createLog(logToCreate);
+      setLogs((currentLogs) => [newLog, ...currentLogs]);
+      setShowAddLog(false);
+      setSelectedBaseId(newLog.baseId);
+      setActiveTab('bases');
+    } catch (error) {
+      console.error('Failed to create log.', error);
+      alert(`保存散步记录失败。\n\n${formatSupabaseError(error)}`);
+    }
   };
 
   const handleAddBase = (
@@ -377,7 +447,7 @@ export default function App() {
         'https://images.unsplash.com/photo-1533240332313-0db49b439ad3?auto=format&fit=crop&q=80&w=600'
     };
 
-    const newBase: Base = {
+    const nextBaseData: Base = {
       id: `base-${Date.now()}`,
       title: newBaseData.title,
       subtitle: newBaseData.subtitle,
@@ -386,19 +456,32 @@ export default function App() {
       coverImage: covers[newBaseData.coverType] || covers.woodland
     };
 
-    const nextBases = [...bases, newBase];
-    setBases(nextBases);
-    saveStateToStorage(nextBases, logs);
-    setShowAddBase(false);
-    setSelectedBaseId(newBase.id);
-    setActiveTab('bases');
+    createBase(nextBaseData)
+      .then((newBase) => {
+        setBases((currentBases) => [...currentBases, newBase]);
+        setShowAddBase(false);
+        setSelectedBaseId(newBase.id);
+        setActiveTab('bases');
+      })
+      .catch((error) => {
+        console.error('Failed to create base.', error);
+        alert(`保存新基地失败。\n\n${formatSupabaseError(error)}`);
+      });
   };
 
-  const handleDeleteLog = (logId: string) => {
+  const handleDeleteLog = async (logId: string) => {
     if (!confirm('确定删除这条散步记录吗？')) return;
-    const nextLogs = logs.filter((log) => log.id !== logId);
-    setLogs(nextLogs);
-    saveStateToStorage(bases, nextLogs);
+    const previousLogs = logs;
+
+    setLogs((currentLogs) => currentLogs.filter((log) => log.id !== logId));
+
+    try {
+      await deleteLog(logId);
+    } catch (error) {
+      console.error('Failed to delete log.', error);
+      setLogs(previousLogs);
+      alert(`删除记录失败。\n\n${formatSupabaseError(error)}`);
+    }
   };
 
   const handleResetData = () => {
@@ -406,8 +489,7 @@ export default function App() {
     setBases(INITIAL_BASES);
     setLogs(INITIAL_LOGS);
     setSelectedBaseId(null);
-    localStorage.setItem(BASES_STORAGE_KEY, JSON.stringify(INITIAL_BASES));
-    localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(INITIAL_LOGS));
+    alert('当前只是临时恢复本地示例数据，不会覆盖 Supabase。需要的话我们可以再加一个正式的 seed/reset 脚本。');
   };
 
   const getLogsForBase = (baseId: string) =>
@@ -570,6 +652,26 @@ export default function App() {
                 <RefreshCw className="h-4 w-4" />
                 重播开场
               </button>
+              {isAuthor ? (
+                <button
+                  type="button"
+                  onClick={handleAuthorSignOut}
+                  title={authUser?.email ? `当前作者：${authUser.email}` : '退出作者登录'}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8]"
+                >
+                  <LogOut className="h-4 w-4" />
+                  退出
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAuthorLogin(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8]"
+                >
+                  <LogIn className="h-4 w-4" />
+                  作者
+                </button>
+              )}
             </div>
           </div>
 
@@ -609,14 +711,17 @@ export default function App() {
         </div>
       </header>
 
-      {false && (
+      {isAuthor && (
         <AuthorTools
           isEditing={isEditing}
           onAddLog={() => setShowAddLog(true)}
-          onAddBase={() => setShowAddBase(true)}
-          onToggleEditing={() => setIsEditing((current) => !current)}
-          onResetData={handleResetData}
-        />
+        onAddBase={() => setShowAddBase(true)}
+        onToggleEditing={() => setIsEditing((current) => !current)}
+        onResetData={handleResetData}
+        isHockney={isHockney}
+        isHockneySummer={isHockneySummer}
+        isSanctuary={isSanctuary}
+      />
       )}
 
       <AnimatePresence>
@@ -629,6 +734,12 @@ export default function App() {
       </AnimatePresence>
 
       <main className={`mx-auto max-w-6xl px-4 py-7 sm:px-6 lg:px-8 ${isHockneySummer && showHome ? 'hockney-summer-home-main' : isHockney && showHome ? 'hockney-home-main' : ''}`}>
+        {isDataLoading && (
+          <div className="mb-4 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-4 py-3 text-sm text-[#6B7E65] shadow-sm shadow-emerald-950/5">
+            正在从 Supabase 读取散步记录...
+          </div>
+        )}
+
         {showHome && (
           <section className={isHockneySummer ? 'hockney-summer-home space-y-6' : isHockney ? 'hockney-home space-y-7' : 'space-y-8'}>
             <section className={isHockneySummer ? 'hockney-summer-map-hero space-y-3' : isHockney ? 'hockney-map-hero space-y-3' : 'space-y-3'}>
@@ -845,6 +956,15 @@ export default function App() {
             <AddBaseModal onClose={() => setShowAddBase(false)} onAddBase={handleAddBase} />
           </motion.div>
         )}
+
+        {showAuthorLogin && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <AuthorLoginModal
+              authorUserId={AUTHOR_USER_ID}
+              onClose={() => setShowAuthorLogin(false)}
+            />
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
@@ -903,6 +1023,96 @@ const OpeningIntro: React.FC<{
         </motion.div>
       </div>
     </motion.section>
+  );
+};
+
+const AuthorLoginModal: React.FC<{
+  authorUserId: string;
+  onClose: () => void;
+}> = ({ authorUserId, onClose }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password
+      });
+
+      if (error) throw error;
+
+      if (!authorUserId || data.user?.id !== authorUserId) {
+        await supabase.auth.signOut();
+        alert('这个账号不是作者账号。');
+        return;
+      }
+
+      onClose();
+    } catch (error) {
+      alert(`作者登录失败。\n\n${formatSupabaseError(error)}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-xs">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-sm rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-xl shadow-stone-900/10"
+      >
+        <div className="mb-4">
+          <h2 className="font-serif text-xl font-semibold text-[#243C32]">作者登录</h2>
+          <p className="mt-1 text-xs leading-5 text-[#6B7E65]">
+            登录后才会显示记录、编辑和删除工具。
+          </p>
+        </div>
+
+        <label className="mb-3 block">
+          <span className="mb-1 block text-xs font-medium text-[#5B7055]">邮箱</span>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="h-11 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] px-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7]"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-[#5B7055]">密码</span>
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="h-11 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] px-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7]"
+          />
+        </label>
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-4 py-2 text-xs font-medium text-[#6B7E65] transition-colors hover:bg-[#F1F5EA]"
+          >
+            取消
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="rounded-lg bg-[#2F5D4A] px-4 py-2 text-xs font-semibold text-[#FFFDF4] transition-colors hover:bg-[#254938] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting ? '登录中...' : '登录'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 
@@ -1031,9 +1241,31 @@ const AuthorTools: React.FC<{
   onAddBase: () => void;
   onToggleEditing: () => void;
   onResetData: () => void;
-}> = ({ isEditing, onAddLog, onAddBase, onToggleEditing, onResetData }) => {
+  isHockney?: boolean;
+  isHockneySummer?: boolean;
+  isSanctuary?: boolean;
+}> = ({
+  isEditing,
+  onAddLog,
+  onAddBase,
+  onToggleEditing,
+  onResetData,
+  isHockney = false,
+  isHockneySummer = false,
+  isSanctuary = false
+}) => {
   return (
-    <aside className="fixed top-28 z-30 hidden w-36 flex-col gap-2 xl:right-4 xl:flex 2xl:left-[calc(50%+36rem+1.5rem)] 2xl:right-auto">
+    <aside
+      className={`fixed top-28 z-30 hidden w-36 flex-col gap-2 xl:right-4 xl:flex 2xl:left-[calc(50%+36rem+1.5rem)] 2xl:right-auto ${
+        isHockneySummer
+          ? 'hockney-summer-author-tools'
+          : isHockney
+            ? 'hockney-author-tools'
+            : isSanctuary
+              ? 'sanctuary-author-tools'
+              : ''
+      }`}
+    >
       <p className="px-1 text-[11px] font-medium text-[#7D8C74]">作者工具</p>
       <button
         type="button"
