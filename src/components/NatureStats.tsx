@@ -381,10 +381,10 @@ export default function NatureStats({
       </section>
 
       {/* 底部：双列布局 */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2">
         {/* 左侧列：散步日志纵览 */}
         <section
-        className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
+        className={`flex h-full flex-col rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
             isHockneySummer
               ? 'hockney-summer-panel'
               : isHockney
@@ -419,7 +419,7 @@ export default function NatureStats({
             </div>
           </div>
 
-          <div className={`mt-4 rounded-lg border border-[#DDE5D6] bg-[#F4F7ED] p-4 ${isHockneySummer ? 'hockney-summer-metric hockney-summer-metric-green' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
+          <div className={`mt-4 flex flex-1 flex-col rounded-lg border border-[#DDE5D6] bg-[#F4F7ED] p-4 ${isHockneySummer ? 'hockney-summer-metric hockney-summer-metric-green' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
             <p className="font-serif text-sm font-semibold text-[#2F5D4A]">
               常去基地
             </p>
@@ -489,7 +489,7 @@ export default function NatureStats({
 
         {/* 右侧列：自然意象 */}
         <section
-        className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
+        className={`flex h-full flex-col rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
             isHockneySummer
               ? 'hockney-summer-panel'
               : isHockney
@@ -507,7 +507,7 @@ export default function NatureStats({
           </h3>
 
           <div
-            className={`relative h-58 overflow-hidden rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] ${
+            className={`relative min-h-[14.5rem] flex-1 overflow-hidden rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] ${
               isHockneySummer
                 ? 'hockney-summer-word-cloud'
                 : isHockney

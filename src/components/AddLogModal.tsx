@@ -3,39 +3,90 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Cloud,
+  CloudFog,
+  CloudRain,
+  Image,
+  Plus,
+  RotateCcw,
+  Save,
+  Sun,
+  Trash2,
+  Upload,
+  Wind,
+  X
+} from 'lucide-react';
 import { Base, WalkLog } from '../types';
-import { X, Save, CloudRain, Sun, Cloud, Wind, CloudFog, Plus } from 'lucide-react';
+import { uploadLogPhotos } from '../services/walkLogService';
 
 interface AddLogModalProps {
   bases: Base[];
+  mode?: 'create' | 'edit';
   selectedBaseId: string | null;
+  initialLog?: WalkLog | null;
+  themeVariant?: 'default' | 'hockneySummer';
   onClose: () => void;
-  onAddLog: (log: Omit<WalkLog, 'id'>) => void;
+  onSaveLog: (log: Omit<WalkLog, 'id'>) => Promise<void> | void;
 }
 
 type Weather = WalkLog['weather'];
+type DraftLog = Omit<WalkLog, 'id'> & { customTag: string };
+
+const WEATHER_OPTIONS: Array<{
+  key: Weather;
+  label: string;
+  icon: React.ReactNode;
+}> = [
+  { key: 'sunny', label: '晴', icon: <Sun className="h-4 w-4 text-amber-500" /> },
+  { key: 'cloudy', label: '多云', icon: <Cloud className="h-4 w-4 text-emerald-500" /> },
+  { key: 'overcast', label: '阴', icon: <CloudFog className="h-4 w-4 text-stone-500" /> },
+  { key: 'rainy', label: '雨', icon: <CloudRain className="h-4 w-4 text-blue-500" /> },
+  { key: 'windy', label: '风', icon: <Wind className="h-4 w-4 text-purple-500" /> }
+];
+
+const PRESET_TAGS = [
+  '水质清澈',
+  '水质浑浊',
+  '野鸭出没',
+  '静坐垂钓',
+  '松涛低吟',
+  '山岚晨雾',
+  '白云移影',
+  '暴雨前夕',
+  '割草芳香',
+  '林间幽凉',
+  '苔藓亮色',
+  '野花漫地',
+  '晨露晶莹',
+  '溪水潺潺',
+  '柳荫波光',
+  '时光缓缓'
+];
+const PRESET_TAG_SET = new Set(PRESET_TAGS);
+
+function todayKey() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 function inferWeatherFromText(selectedWeather: Weather, weatherText: string): Weather {
-  const text = weatherText.trim();
-
-  if (selectedWeather !== 'sunny' || !text) return selectedWeather;
-  if (/[雨雪霰雹]/.test(text)) return 'rainy';
-  if (/[风風吹]/.test(text)) return 'windy';
-  if (/[阴陰]/.test(text)) return 'overcast';
-  if (/[云雲]/.test(text)) return 'cloudy';
-
+  void weatherText;
   return selectedWeather;
 }
 
 function defaultTagForWeather(weather: Weather) {
   switch (weather) {
     case 'sunny':
-      return '烈日晴天';
+      return '晴日漫步';
     case 'cloudy':
       return '流云缓行';
     case 'rainy':
-      return '淅沥小雨';
+      return '清润小雨';
     case 'overcast':
       return '阴天漫步';
     case 'windy':
@@ -45,127 +96,279 @@ function defaultTagForWeather(weather: Weather) {
   }
 }
 
+function weatherLabelForWeather(weather: Weather) {
+  return WEATHER_OPTIONS.find((option) => option.key === weather)?.label ?? '晴';
+}
+
+function makeDraftKey(mode: 'create' | 'edit', logId?: string) {
+  return mode === 'edit' && logId ? `walk-log-draft:edit:${logId}` : 'walk-log-draft:create';
+}
+
+function parseDraft(value: string | null): DraftLog | null {
+  if (!value) return null;
+
+  try {
+    const parsed = JSON.parse(value) as Partial<DraftLog>;
+    if (!parsed || typeof parsed !== 'object') return null;
+    return {
+      baseId: typeof parsed.baseId === 'string' ? parsed.baseId : '',
+      date: typeof parsed.date === 'string' ? parsed.date : todayKey(),
+      weather: parsed.weather ?? 'sunny',
+      weatherText: typeof parsed.weatherText === 'string' ? parsed.weatherText : '',
+      tags: Array.isArray(parsed.tags) ? parsed.tags.filter((tag) => typeof tag === 'string') : [],
+      photos: Array.isArray(parsed.photos)
+        ? parsed.photos.filter((photo) => typeof photo === 'string')
+        : undefined,
+      content: typeof parsed.content === 'string' ? parsed.content : '',
+      customTag: typeof parsed.customTag === 'string' ? parsed.customTag : ''
+    };
+  } catch {
+    return null;
+  }
+}
+
+function hasMeaningfulDraft(draft: DraftLog) {
+  return Boolean(
+    draft.content.trim() ||
+      draft.weatherText.trim() ||
+      draft.tags.length ||
+      (draft.photos?.length ?? 0) > 0 ||
+      draft.customTag.trim()
+  );
+}
+
+function sameStringList(firstList: string[] | undefined, secondList: string[] | undefined) {
+  const first = firstList ?? [];
+  const second = secondList ?? [];
+  return first.length === second.length && first.every((item, index) => item === second[index]);
+}
+
+function sameDraft(first: DraftLog, second: DraftLog) {
+  return (
+    first.baseId === second.baseId &&
+    first.date === second.date &&
+    first.weather === second.weather &&
+    first.weatherText === second.weatherText &&
+    first.content === second.content &&
+    first.customTag === second.customTag &&
+    sameStringList(first.tags, second.tags) &&
+    sameStringList(first.photos, second.photos)
+  );
+}
+
+function acceptedImageFiles(fileList: FileList | File[]) {
+  return Array.from(fileList).filter((file) => file.type.startsWith('image/'));
+}
+
 export default function AddLogModal({
   bases,
+  mode = 'create',
   selectedBaseId,
+  initialLog,
+  themeVariant = 'default',
   onClose,
-  onAddLog
+  onSaveLog
 }: AddLogModalProps) {
-  const [baseId, setBaseId] = useState(selectedBaseId || bases[0]?.id || '');
-  const [date, setDate] = useState('2026-06-15'); // default to current local date
-  const [weather, setWeather] = useState<'sunny' | 'cloudy' | 'rainy' | 'overcast' | 'windy'>('sunny');
-  const [weatherText, setWeatherText] = useState('微风晴朗');
-  const [content, setContent] = useState('');
-  const [photoPaths, setPhotoPaths] = useState('');
-  
-  // Tag presets
-  const presetTags = [
-    '水质清澈', '水质浑浊', '野鸭出没', '静坐垂钓', 
-    '松涛低吟', '山峦晨雾', '白云移影', '暴雨前夕', 
-    '割草芳香', '林间幽凉', '苔藓亮色', '野花漫地', 
-    '晨露晶莹', '溪水潺潺', '柳荫波光', '时光缓缓'
-  ];
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [customTag, setCustomTag] = useState('');
+  const isHockneySummer = themeVariant === 'hockneySummer';
+  const draftKey = useMemo(() => makeDraftKey(mode, initialLog?.id), [initialLog?.id, mode]);
+  const initialDraft = useMemo<DraftLog>(() => {
+    const savedDraft = parseDraft(localStorage.getItem(draftKey));
+    if (savedDraft) return savedDraft;
+
+    return {
+      baseId: initialLog?.baseId || selectedBaseId || bases[0]?.id || '',
+      date: initialLog?.date || todayKey(),
+      weather: initialLog?.weather || 'sunny',
+      weatherText: initialLog?.weatherText || '',
+      tags: initialLog?.tags ?? [],
+      photos: initialLog?.photos,
+      content: initialLog?.content || '',
+      customTag: ''
+    };
+  }, [bases, draftKey, initialLog, selectedBaseId]);
+
+  const [baseId, setBaseId] = useState(initialDraft.baseId);
+  const [date, setDate] = useState(initialDraft.date);
+  const [weather, setWeather] = useState<Weather>(initialDraft.weather);
+  const [weatherText, setWeatherText] = useState(initialDraft.weatherText);
+  const [content, setContent] = useState(initialDraft.content);
+  const [photoUrls, setPhotoUrls] = useState<string[]>(initialDraft.photos ?? []);
+  const [selectedTags, setSelectedTags] = useState<string[]>(initialDraft.tags);
+  const [customTag, setCustomTag] = useState(initialDraft.customTag);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
+  const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
+  const [lastDraftSavedAt, setLastDraftSavedAt] = useState<string | null>(null);
+
+  const draft: DraftLog = {
+    baseId,
+    date,
+    weather,
+    weatherText,
+    tags: selectedTags,
+    photos: photoUrls,
+    content,
+    customTag
+  };
+  const hasDraftChanges = !sameDraft(draft, initialDraft);
+
+  useEffect(() => {
+    if (isSaving) return;
+
+    const timer = window.setTimeout(() => {
+      if (!hasDraftChanges) return;
+
+      if (hasMeaningfulDraft(draft)) {
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+        setLastDraftSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      } else {
+        localStorage.removeItem(draftKey);
+        setLastDraftSavedAt(null);
+      }
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [baseId, content, customTag, date, draftKey, hasDraftChanges, initialDraft, isSaving, photoUrls, selectedTags, weather, weatherText]);
 
   const handleToggleTag = (tag: string) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter(t => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
-    }
+    setSelectedTags((currentTags) =>
+      currentTags.includes(tag)
+        ? currentTags.filter((currentTag) => currentTag !== tag)
+        : [...currentTags, tag]
+    );
   };
 
-  const handleAddCustomTag = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddCustomTag = (event?: React.FormEvent) => {
+    event?.preventDefault();
     const cleaned = customTag.trim();
     if (cleaned && !selectedTags.includes(cleaned)) {
-      setSelectedTags([...selectedTags, cleaned]);
+      setSelectedTags((currentTags) => [...currentTags, cleaned]);
       setCustomTag('');
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!content.trim()) {
-      alert('请输入漫步观测记录文字。');
-      return;
-    }
-    
-    const submittedWeatherText = weatherText.trim() || '温润天气';
-    const submittedWeather = inferWeatherFromText(weather, submittedWeatherText);
-
-    // Add default tags if none chosen to preserve visual beauty
-    let tagsToSubmit = [...selectedTags];
-    if (tagsToSubmit.length === 0) {
-      tagsToSubmit.push(defaultTagForWeather(submittedWeather));
-    }
-    if (false && tagsToSubmit.length === 0) {
-      if (weather === 'sunny') tagsToSubmit.push('烈日晴天');
-      else if (weather === 'cloudy') tagsToSubmit.push('清云悠悠');
-      else if (weather === 'rainy') tagsToSubmit.push('淅沥小雨');
-      else tagsToSubmit.push('偶有随感');
-    }
-
-    const photos = photoPaths
-      .split(/[\n,]/)
-      .map(path => path.trim())
-      .filter(Boolean);
-
-    onAddLog({
-      baseId,
-      date,
-      weather: submittedWeather,
-      weatherText: submittedWeatherText,
-      tags: tagsToSubmit,
-      ...(photos.length > 0 ? { photos } : {}),
-      content: content.trim()
-    });
+  const removeSelectedTag = (tag: string) => {
+    setSelectedTags((currentTags) => currentTags.filter((currentTag) => currentTag !== tag));
   };
 
-  // Weather configuration details for quick selection UI
-  const weatherConfigs = [
-    { key: 'sunny', label: '晴', icon: <Sun className="w-4 h-4 text-amber-500" /> },
-    { key: 'cloudy', label: '多云', icon: <CloudSunIcon className="w-4 h-4 text-emerald-500" /> },
-    { key: 'overcast', label: '阴', icon: <CloudFog className="w-4 h-4 text-stone-500" /> },
-    { key: 'rainy', label: '急雨', icon: <CloudRain className="w-4 h-4 text-blue-500" /> },
-    { key: 'windy', label: '起风', icon: <Wind className="w-4 h-4 text-purple-500" /> },
-  ] as const;
+  const handleUploadPhotos = async (fileList: FileList | File[]) => {
+    const files = acceptedImageFiles(fileList);
+    if (files.length === 0) return;
+
+    setIsUploadingPhotos(true);
+    try {
+      const uploadedUrls = await uploadLogPhotos(files);
+      setPhotoUrls((currentUrls) => [...currentUrls, ...uploadedUrls]);
+    } catch (error) {
+      console.error('Failed to upload photos.', error);
+      alert('照片上传失败。请确认 Supabase Storage bucket 已创建，并允许作者账号上传图片。');
+    } finally {
+      setIsUploadingPhotos(false);
+      setIsDraggingPhoto(false);
+    }
+  };
+
+  const removePhoto = (photoUrl: string) => {
+    setPhotoUrls((currentUrls) => currentUrls.filter((url) => url !== photoUrl));
+  };
+
+  const handleClose = () => {
+    if (hasDraftChanges && hasMeaningfulDraft(draft)) {
+      const shouldClose = confirm('当前内容已经保存为草稿。现在关闭，之后再打开可以继续编辑。要关闭吗？');
+      if (!shouldClose) return;
+    }
+
+    onClose();
+  };
+
+  const handleDiscardDraft = () => {
+    if (!confirm('确定清空这份草稿吗？当前未保存的内容会被移除。')) return;
+    localStorage.removeItem(draftKey);
+    setBaseId(initialLog?.baseId || selectedBaseId || bases[0]?.id || '');
+    setDate(initialLog?.date || todayKey());
+    setWeather(initialLog?.weather || 'sunny');
+    setWeatherText(initialLog?.weatherText || '');
+    setContent(initialLog?.content || '');
+    setPhotoUrls(initialLog?.photos ?? []);
+    setSelectedTags(initialLog?.tags ?? []);
+    setCustomTag('');
+    setLastDraftSavedAt(null);
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!content.trim()) {
+      alert('请输入散步观察记录文字。');
+      return;
+    }
+    if (isUploadingPhotos) {
+      alert('照片还在上传中，稍等一下再保存。');
+      return;
+    }
+
+    const submittedWeatherText = weatherText.trim() || weatherLabelForWeather(weather);
+    const submittedWeather = inferWeatherFromText(weather, submittedWeatherText);
+    const pendingCustomTag = customTag.trim();
+    const explicitTags = pendingCustomTag && !selectedTags.includes(pendingCustomTag)
+      ? [...selectedTags, pendingCustomTag]
+      : selectedTags;
+    const tagsToSubmit =
+      explicitTags.length > 0 ? explicitTags : [defaultTagForWeather(submittedWeather)];
+
+    setIsSaving(true);
+    try {
+      await onSaveLog({
+        baseId,
+        date,
+        weather: submittedWeather,
+        weatherText: submittedWeatherText,
+        tags: tagsToSubmit,
+        ...(photoUrls.length > 0 ? { photos: photoUrls } : {}),
+        content: content.trim()
+      });
+      localStorage.removeItem(draftKey);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-xs">
-      <div className="bg-[#FAF9F5] border border-stone-200 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col transition-all">
-        {/* Header */}
-        <div className="p-5 border-b border-stone-200/60 bg-white flex justify-between items-center">
+    <div className={`fixed inset-0 z-[130] flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-xs ${isHockneySummer ? 'hockney-summer-modal-shell' : ''}`}>
+      <div className={`flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-stone-200 bg-[#FAF9F5] shadow-xl ${isHockneySummer ? 'hockney-summer-modal' : ''}`}>
+        <div className="flex items-start justify-between gap-4 border-b border-stone-200/60 bg-white p-5">
           <div>
-            <h3 className="text-lg font-serif font-bold text-stone-800">记下一笔新的散步观测</h3>
-            <p className="text-xs text-stone-500 mt-1">
-              文字不长，字字珠玑。记录基地里的水草、飞禽、松涛，也收好路上的偶遇。
+            <h3 className="font-serif text-lg font-bold text-stone-800">
+              {mode === 'edit' ? '编辑这条散步记录' : '记下一笔新的散步观察'}
+            </h3>
+            <p className="mt-1 text-xs leading-5 text-stone-500">
+              写到一半会自动保存草稿。地点、天气、标签和照片之后也可以回来修改。
             </p>
+            {lastDraftSavedAt && (
+              <p className="mt-1 text-[11px] text-emerald-700">草稿已保存 {lastDraftSavedAt}</p>
+            )}
           </div>
-          <button 
+          <button
             type="button"
-            onClick={onClose}
-            className="p-1.5 hover:bg-stone-100 rounded-full text-stone-400 hover:text-stone-700 transition-colors"
+            onClick={handleClose}
+            className="rounded-full p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700"
+            aria-label="关闭"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Content Form Scroll Container */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-5 flex-1 select-none">
-          {/* Base Selection Row */}
+        <form onSubmit={handleSubmit} className="flex-1 space-y-5 overflow-y-auto p-6">
           <div>
-            <label className="block text-xs font-serif font-bold text-stone-700 mb-1.5">
-              1. 选定记录位置 Place *
+            <label className="mb-1.5 block font-serif text-xs font-bold text-stone-700">
+              1. 记录位置 Place *
             </label>
             <select
               value={baseId}
-              onChange={(e) => setBaseId(e.target.value)}
-              className="w-full text-sm p-3 bg-white border border-stone-200 rounded-xl focus:border-emerald-700 outline-none transition-colors"
+              onChange={(event) => setBaseId(event.target.value)}
+              className="w-full rounded-xl border border-stone-200 bg-white p-3 text-sm outline-none transition-colors focus:border-emerald-700"
               required
             >
-              {bases.map(base => (
+              {bases.map((base) => (
                 <option key={base.id} value={base.id}>
                   {base.title}
                 </option>
@@ -173,160 +376,246 @@ export default function AddLogModal({
             </select>
           </div>
 
-          {/* Date */}
           <div>
-            <label className="block text-xs font-serif font-bold text-stone-700 mb-1.5">
-              2. 记录到访日期 Date *
+            <label className="mb-1.5 block font-serif text-xs font-bold text-stone-700">
+              2. 到访日期 Date *
             </label>
             <input
               type="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full text-sm p-2.5 bg-white border border-stone-200 rounded-xl focus:border-emerald-700 outline-none font-mono"
+              onChange={(event) => setDate(event.target.value)}
+              className="w-full rounded-xl border border-stone-200 bg-white p-2.5 font-mono text-sm outline-none focus:border-emerald-700"
               required
             />
           </div>
 
-          {/* Weather configuration Grid */}
           <div>
-            <label className="block text-xs font-serif font-bold text-stone-700 mb-1.5">
-              3. 气候环境状态 Weather *
+            <label className="mb-1.5 block font-serif text-xs font-bold text-stone-700">
+              3. 天气 Weather *
             </label>
             <div className="grid grid-cols-5 gap-2">
-              {weatherConfigs.map(cfg => {
-                const isSelected = weather === cfg.key;
+              {WEATHER_OPTIONS.map((option) => {
+                const isSelected = weather === option.key;
                 return (
                   <button
-                    key={cfg.key}
+                    key={option.key}
                     type="button"
-                    onClick={() => setWeather(cfg.key)}
-                    className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border text-xs transition-all ${
+                    onClick={() => setWeather(option.key)}
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border p-2 text-xs transition-colors ${
                       isSelected
-                        ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-medium'
-                        : 'bg-white border-stone-200 hover:border-stone-300 text-stone-600'
+                        ? 'border-emerald-300 bg-emerald-50 font-medium text-emerald-950'
+                        : 'border-stone-200 bg-white text-stone-600 hover:border-stone-300'
+                    } ${isHockneySummer ? 'hockney-summer-weather-option' : ''} ${
+                      isHockneySummer && isSelected ? 'hockney-summer-weather-option-selected' : ''
                     }`}
                   >
-                    {cfg.icon}
-                    <span>{cfg.label}</span>
+                    {option.icon}
+                    <span>{option.label}</span>
                   </button>
                 );
               })}
             </div>
-            
+
             <input
               type="text"
               value={weatherText}
-              onChange={(e) => setWeatherText(e.target.value)}
-              placeholder="自定义微气候详情（例如：骤雨放晴、薄雾笼罩、风急松鸣）"
-              className="w-full text-xs p-2.5 bg-white border border-stone-200 rounded-xl focus:border-emerald-700 outline-none mt-2"
+              onChange={(event) => setWeatherText(event.target.value)}
+              placeholder="自定义微天气，例如：薄雾放晴、雨后微凉、风急松鸣"
+              className="mt-2 w-full rounded-xl border border-stone-200 bg-white p-2.5 text-xs outline-none focus:border-emerald-700"
             />
           </div>
 
-          {/* Tags Select Group */}
           <div>
-            <label className="block text-xs font-serif font-bold text-stone-700 mb-1.5">
-              4. 标记你今日观察到的独特迹象 Tags (可多选)
+            <label className="mb-1.5 block font-serif text-xs font-bold text-stone-700">
+              4. 标签 Tags
             </label>
-            
-            <div className="flex flex-wrap gap-1.5 max-h-[110px] overflow-y-auto p-2 border border-stone-200/50 rounded-xl bg-stone-50/50">
-              {presetTags.map(tag => {
-                const isChecked = selectedTags.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => handleToggleTag(tag)}
-                    className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
-                      isChecked
-                        ? 'bg-emerald-800 border-emerald-800 text-white'
-                        : 'bg-white border-stone-200 hover:border-stone-300 text-stone-600'
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                );
-              })}
+
+            <div className="max-h-[110px] overflow-y-auto rounded-xl border border-stone-200/50 bg-stone-50/50 p-2">
+              <div className="flex flex-wrap gap-1.5">
+                {PRESET_TAGS.map((tag) => {
+                  const isChecked = selectedTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => handleToggleTag(tag)}
+                      className={`rounded-lg border px-2.5 py-1 text-xs transition-colors ${
+                        isChecked
+                          ? 'border-emerald-800 bg-emerald-800 text-white'
+                          : 'border-stone-200 bg-white text-stone-600 hover:border-stone-300'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Custom Tag additions */}
-            <div className="flex gap-2 mt-2">
+            {selectedTags.some((tag) => !PRESET_TAG_SET.has(tag)) && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {selectedTags
+                  .filter((tag) => !PRESET_TAG_SET.has(tag))
+                  .map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => removeSelectedTag(tag)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs text-emerald-800 transition-colors hover:bg-emerald-100"
+                      title="点击移除这个标签"
+                    >
+                      #{tag}
+                      <X className="h-3 w-3" />
+                    </button>
+                  ))}
+              </div>
+            )}
+
+            <div className="mt-2 flex gap-2">
               <input
                 type="text"
-                placeholder="在此追加你今日偶遇的特殊标签（如：小白羽毛、苔藓变褐）"
+                placeholder="追加一个自己的标签"
                 value={customTag}
-                onChange={(e) => setCustomTag(e.target.value)}
-                className="flex-1 text-xs p-2 bg-white border border-stone-200 rounded-xl focus:border-emerald-700 outline-none"
+                onChange={(event) => setCustomTag(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleAddCustomTag();
+                  }
+                }}
+                className="min-w-0 flex-1 rounded-xl border border-stone-200 bg-white p-2 text-xs outline-none focus:border-emerald-700"
               />
               <button
                 type="button"
-                onClick={handleAddCustomTag}
-                className="bg-stone-200 hover:bg-stone-300 text-stone-700 text-xs px-3 rounded-xl flex items-center gap-1 transition-colors"
+                onClick={() => handleAddCustomTag()}
+                className="flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-medium text-emerald-800 transition-colors hover:border-emerald-300 hover:bg-emerald-100"
               >
-                <Plus className="w-3.5 h-3.5" />
-                添入
+                <Plus className="h-3.5 w-3.5" />
+                加入
               </button>
             </div>
           </div>
 
-          {/* Photos */}
           <div>
-            <label className="block text-xs font-serif font-bold text-stone-700 mb-1.5">
-              5. 照片路径 Photos (可选)
+            <label className="mb-1.5 block font-serif text-xs font-bold text-stone-700">
+              5. 照片 Photos
             </label>
-            <textarea
-              rows={2}
-              value={photoPaths}
-              onChange={(e) => setPhotoPaths(e.target.value)}
-              placeholder="/images/base_1_ducks.jpg，或每行一张照片路径"
-              className="w-full text-xs p-3 bg-white border border-stone-200 rounded-xl focus:border-emerald-700 outline-none font-mono leading-relaxed"
-            />
+            <label
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setIsDraggingPhoto(true);
+              }}
+              onDragOver={(event) => event.preventDefault()}
+              onDragLeave={(event) => {
+                event.preventDefault();
+                setIsDraggingPhoto(false);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                handleUploadPhotos(event.dataTransfer.files);
+              }}
+              className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed p-5 text-center transition-colors ${
+                isDraggingPhoto
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
+                  : 'border-stone-300 bg-white text-stone-600 hover:border-emerald-400 hover:bg-emerald-50/50'
+              }`}
+            >
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                multiple
+                disabled={isUploadingPhotos}
+                onChange={(event) => {
+                  if (event.target.files) handleUploadPhotos(event.target.files);
+                  event.currentTarget.value = '';
+                }}
+                className="sr-only"
+              />
+              <Upload className="mb-2 h-5 w-5" />
+              <span className="text-sm font-medium">
+                {isUploadingPhotos ? '照片上传中...' : '拖拽照片到这里，或点击选择/拍摄'}
+              </span>
+              <span className="mt-1 text-xs text-stone-500">
+                上传后会自动保存为照片 URL，写进这条日志。
+              </span>
+            </label>
+
+            {photoUrls.length > 0 && (
+              <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {photoUrls.map((photoUrl) => (
+                  <div
+                    key={photoUrl}
+                    className="group relative aspect-square overflow-hidden rounded-lg border border-stone-200 bg-stone-100"
+                  >
+                    <img src={photoUrl} alt="散步照片预览" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(photoUrl)}
+                      className="absolute right-1 top-1 inline-flex h-7 w-7 items-center justify-center rounded-md bg-stone-950/70 text-white opacity-100 transition-colors hover:bg-rose-600 sm:opacity-0 sm:group-hover:opacity-100"
+                      aria-label="移除照片"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {photoUrls.length === 0 && (
+              <p className="mt-2 inline-flex items-center gap-1 text-xs text-stone-500">
+                <Image className="h-3.5 w-3.5" />
+                暂时没有照片，也可以先保存文字。
+              </p>
+            )}
           </div>
 
-          {/* Diary write Area */}
           <div>
-            <label className="block text-xs font-serif font-bold text-stone-700 mb-1.5">
-              6. 今日林泉随感 Observation Record *
+            <label className="mb-1.5 block font-serif text-xs font-bold text-stone-700">
+              6. 观察记录 Observation *
             </label>
             <textarea
               required
-              rows={4}
+              rows={5}
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="今日河水是清澈还是有些浑浊？河中的小沙洲上，野鸭子今天在吗？钓鱼人钓到什么了吗？长椅后松涛声多大，对山的长天云朵发生了何种神妙变迁？静静看了一会儿，随便写下一两行心语..."
-              className="w-full text-sm p-4 bg-white border border-stone-200 rounded-xl focus:border-emerald-700 outline-none transition-colors font-serif leading-relaxed"
+              onChange={(event) => setContent(event.target.value)}
+              placeholder="今天河水、树影、风、云、路边偶遇了什么？随便写下一两行也很好。"
+              className="w-full rounded-xl border border-stone-200 bg-white p-4 font-serif text-sm leading-7 outline-none transition-colors focus:border-emerald-700"
             />
           </div>
         </form>
 
-        {/* Footer actions */}
-        <div className="p-4 border-t border-stone-200/60 bg-white flex justify-end gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-stone-200/60 bg-white p-4">
           <button
             type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-xs border border-stone-200 hover:bg-stone-50 rounded-xl font-medium text-stone-600 transition-colors"
+            onClick={handleDiscardDraft}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 px-3 py-2 text-xs font-medium text-stone-500 transition-colors hover:bg-stone-50 hover:text-stone-700"
           >
-            取消关闭
+            <RotateCcw className="h-3.5 w-3.5" />
+            清空草稿
           </button>
-          
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="px-6 py-2 text-xs bg-emerald-800 hover:bg-emerald-950 rounded-xl font-semibold text-white transition-colors flex items-center gap-1.5"
-          >
-            <Save className="w-4 h-4" />
-            保存散步日志
-          </button>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="rounded-xl border border-stone-200 px-4 py-2 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50"
+            >
+              关闭
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSaving || isUploadingPhotos}
+              className="flex items-center gap-1.5 rounded-xl bg-emerald-800 px-6 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-950 disabled:cursor-not-allowed disabled:bg-stone-300"
+            >
+              <Save className="h-4 w-4" />
+              {isSaving ? '保存中...' : mode === 'edit' ? '保存修改' : '保存记录'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  );
-}
-
-// Simple custom component for CloudSun icon to prevent rendering warnings
-function CloudSunIcon({ className }: { className?: string }) {
-  return (
-    <span className={className}>
-      <Cloud className="w-4 h-4 inline" />
-    </span>
   );
 }

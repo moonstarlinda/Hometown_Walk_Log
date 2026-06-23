@@ -1,6 +1,10 @@
 import { getSupabaseClient } from '../lib/supabase';
 import { Base, WalkLog } from '../types';
 
+const PHOTO_BUCKET = import.meta.env.VITE_SUPABASE_PHOTO_BUCKET ?? 'walk-log-photos';
+const PHOTO_MAX_DIMENSION = 1600;
+const PHOTO_COMPRESSION_QUALITY = 0.82;
+
 type BaseRow = {
   id: string;
   title: string | null;
@@ -107,6 +111,27 @@ export async function createLog(log: WalkLog): Promise<WalkLog> {
   return mapLog(data as LogRow);
 }
 
+export async function updateLog(log: WalkLog): Promise<WalkLog> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('logs')
+    .update({
+      base_id: log.baseId,
+      date: log.date,
+      weather: log.weather,
+      weather_text: log.weatherText,
+      tags: log.tags,
+      photos: log.photos ?? null,
+      content: log.content
+    })
+    .eq('id', log.id)
+    .select('id,base_id,date,weather,weather_text,tags,photos,content')
+    .single();
+
+  if (error) throw error;
+  return mapLog(data as LogRow);
+}
+
 export async function deleteLog(logId: string): Promise<void> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
@@ -119,4 +144,151 @@ export async function deleteLog(logId: string): Promise<void> {
   if (!data || data.length === 0) {
     throw new Error('没有删除任何记录。请确认你已用作者账号登录，并且 RLS delete 策略允许当前用户删除 logs。');
   }
+}
+
+export async function deleteLogs(logIds: string[]): Promise<void> {
+  if (logIds.length === 0) return;
+
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('logs')
+    .delete()
+    .in('id', logIds)
+    .select('id');
+
+  if (error) throw error;
+  if (!data || data.length !== logIds.length) {
+    throw new Error('部分记录没有被删除。请确认你已用作者账号登录，并且 RLS delete 策略允许当前用户删除 logs。');
+  }
+}
+
+type UploadablePhoto = {
+  body: Blob;
+  extension: string;
+  contentType: string;
+};
+
+function fileExtension(fileName: string, contentType?: string) {
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  if (extension && /^[a-z0-9]+$/.test(extension)) return extension;
+
+  const mimeExtension = contentType?.split('/').pop()?.toLowerCase();
+  return mimeExtension && /^[a-z0-9]+$/.test(mimeExtension) ? mimeExtension : 'jpg';
+}
+
+function makePhotoPath(extension: string) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = `${now.getMonth() + 1}`.padStart(2, '0');
+  const random = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  return `logs/${year}/${month}/${Date.now()}-${random}.${extension}`;
+}
+
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = document.createElement('img');
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Unable to decode image before upload.'));
+    };
+    image.src = objectUrl;
+  });
+}
+
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality: number
+): Promise<Blob | null> {
+  return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+}
+
+function isCompressiblePhoto(file: File) {
+  return (
+    file.type.startsWith('image/') &&
+    file.type !== 'image/gif' &&
+    file.type !== 'image/svg+xml'
+  );
+}
+
+async function compressPhoto(file: File): Promise<UploadablePhoto> {
+  const fallback: UploadablePhoto = {
+    body: file,
+    extension: fileExtension(file.name, file.type),
+    contentType: file.type || 'application/octet-stream'
+  };
+
+  if (!isCompressiblePhoto(file)) return fallback;
+
+  try {
+    const image = await loadImage(file);
+    const scale = Math.min(
+      1,
+      PHOTO_MAX_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight)
+    );
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d');
+    if (!context) return fallback;
+
+    context.drawImage(image, 0, 0, width, height);
+
+    const webpBlob = await canvasToBlob(canvas, 'image/webp', PHOTO_COMPRESSION_QUALITY);
+    if (webpBlob && webpBlob.size < file.size) {
+      return {
+        body: webpBlob,
+        extension: 'webp',
+        contentType: 'image/webp'
+      };
+    }
+
+    const jpegBlob = await canvasToBlob(canvas, 'image/jpeg', PHOTO_COMPRESSION_QUALITY);
+    if (jpegBlob && jpegBlob.size < file.size) {
+      return {
+        body: jpegBlob,
+        extension: 'jpg',
+        contentType: 'image/jpeg'
+      };
+    }
+  } catch (error) {
+    console.warn('Image compression failed; uploading original file.', error);
+  }
+
+  return fallback;
+}
+
+export async function uploadLogPhotos(files: File[]): Promise<string[]> {
+  if (files.length === 0) return [];
+
+  const supabase = getSupabaseClient();
+  const uploadedUrls: string[] = [];
+
+  for (const file of files) {
+    const uploadablePhoto = await compressPhoto(file);
+    const path = makePhotoPath(uploadablePhoto.extension);
+    const { error } = await supabase.storage
+      .from(PHOTO_BUCKET)
+      .upload(path, uploadablePhoto.body, {
+        cacheControl: '31536000',
+        contentType: uploadablePhoto.contentType,
+        upsert: false
+      });
+
+    if (error) throw error;
+
+    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    uploadedUrls.push(data.publicUrl);
+  }
+
+  return uploadedUrls;
 }

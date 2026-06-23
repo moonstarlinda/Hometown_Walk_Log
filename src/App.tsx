@@ -24,7 +24,6 @@ import {
   Pencil,
   Plus,
   RefreshCw,
-  RotateCcw,
   Search,
   Sun,
   Trash2,
@@ -44,8 +43,10 @@ import {
   createBase,
   createLog,
   deleteLog,
+  deleteLogs,
   getBases,
-  getLogs
+  getLogs,
+  updateLog
 } from './services/walkLogService';
 
 const INTRO_STORAGE_KEY = 'hometown_opening_intro_seen';
@@ -58,6 +59,9 @@ type BasePalette = {
   text: string;
   shadow: string;
 };
+type ActiveLogEditor =
+  | { mode: 'create'; initialBaseId: string | null }
+  | { mode: 'edit'; logId: string };
 
 const SANCTUARY_PALETTES: Record<string, BasePalette> = {
   'base-1': {
@@ -232,9 +236,10 @@ export default function App() {
   const [logs, setLogs] = useState<WalkLog[]>([]);
   const [selectedBaseId, setSelectedBaseId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'bases' | 'timeline' | 'stats'>('bases');
-  const [showAddLog, setShowAddLog] = useState(false);
+  const [activeLogEditor, setActiveLogEditor] = useState<ActiveLogEditor | null>(null);
   const [showAddBase, setShowAddBase] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedLogIds, setSelectedLogIds] = useState<string[]>([]);
   const [showIntro, setShowIntro] = useState(false);
   const [showAuthorLogin, setShowAuthorLogin] = useState(false);
   const [authUser, setAuthUser] = useState<{ id: string; email?: string } | null>(null);
@@ -252,7 +257,7 @@ export default function App() {
   const isHockneySummer = theme === 'hockneySummer';
   const isSanctuary = theme === 'sanctuary';
   const isAuthor = Boolean(AUTHOR_USER_ID && authUser?.id === AUTHOR_USER_ID);
-  const hasOpenModal = showAddLog || showAddBase || showAuthorLogin;
+  const hasOpenModal = Boolean(activeLogEditor) || showAddBase || showAuthorLogin;
 
   useEffect(() => {
     if (!supabase) return;
@@ -422,7 +427,47 @@ export default function App() {
     });
   }, [filterBaseId, filterDate, filterWeather, searchQuery, sortedLogs]);
 
-  const handleAddLog = async (newLogData: Omit<WalkLog, 'id'>) => {
+  const editingLog =
+    activeLogEditor?.mode === 'edit'
+      ? logs.find((log) => log.id === activeLogEditor.logId) ?? null
+      : null;
+
+  const openCreateLog = (initialBaseId: string | null = selectedBaseId) => {
+    setActiveLogEditor({ mode: 'create', initialBaseId });
+  };
+
+  const openEditLog = (logId: string) => {
+    setActiveLogEditor({ mode: 'edit', logId });
+  };
+
+  const handleSaveLog = async (newLogData: Omit<WalkLog, 'id'>) => {
+    if (activeLogEditor?.mode === 'edit') {
+      const currentLog = logs.find((log) => log.id === activeLogEditor.logId);
+      if (!currentLog) {
+        alert('没有找到要编辑的记录，可能它已经被删除。');
+        return;
+      }
+
+      try {
+        const updatedLog = await updateLog({
+          ...currentLog,
+          ...newLogData
+        });
+
+        setLogs((currentLogs) =>
+          currentLogs.map((log) => (log.id === updatedLog.id ? updatedLog : log))
+        );
+        setActiveLogEditor(null);
+        setSelectedBaseId(updatedLog.baseId);
+        setActiveTab('bases');
+      } catch (error) {
+        console.error('Failed to update log.', error);
+        alert(`保存修改失败。\n\n${formatSupabaseError(error)}`);
+        throw error;
+      }
+      return;
+    }
+
     const logToCreate: WalkLog = {
       ...newLogData,
       id: `log-${Date.now()}`
@@ -431,12 +476,13 @@ export default function App() {
     try {
       const newLog = await createLog(logToCreate);
       setLogs((currentLogs) => [newLog, ...currentLogs]);
-      setShowAddLog(false);
+      setActiveLogEditor(null);
       setSelectedBaseId(newLog.baseId);
       setActiveTab('bases');
     } catch (error) {
       console.error('Failed to create log.', error);
       alert(`保存散步记录失败。\n\n${formatSupabaseError(error)}`);
+      throw error;
     }
   };
 
@@ -479,10 +525,13 @@ export default function App() {
   };
 
   const handleDeleteLog = async (logId: string) => {
-    if (!confirm('确定删除这条散步记录吗？')) return;
+    const logToDelete = logs.find((log) => log.id === logId);
+    const deleteLabel = logToDelete ? `${formatDate(logToDelete.date)} 这条记录` : '这条散步记录';
+    if (!confirm(`确定删除 ${deleteLabel} 吗？`)) return;
     const previousLogs = logs;
 
     setLogs((currentLogs) => currentLogs.filter((log) => log.id !== logId));
+    setSelectedLogIds((currentIds) => currentIds.filter((id) => id !== logId));
 
     try {
       await deleteLog(logId);
@@ -493,12 +542,23 @@ export default function App() {
     }
   };
 
-  const handleResetData = () => {
-    if (!confirm('确定恢复为默认示例数据吗？你新增的记录会被清空。')) return;
-    setBases(INITIAL_BASES);
-    setLogs(INITIAL_LOGS);
-    setSelectedBaseId(null);
-    alert('当前只是临时恢复本地示例数据，不会覆盖 Supabase。需要的话我们可以再加一个正式的 seed/reset 脚本。');
+  const handleDeleteSelectedLogs = async () => {
+    if (selectedLogIds.length === 0) return;
+    if (!confirm(`确定删除选中的 ${selectedLogIds.length} 条散步记录吗？`)) return;
+
+    const idsToDelete = selectedLogIds;
+    const previousLogs = logs;
+    setLogs((currentLogs) => currentLogs.filter((log) => !idsToDelete.includes(log.id)));
+    setSelectedLogIds([]);
+
+    try {
+      await deleteLogs(idsToDelete);
+    } catch (error) {
+      console.error('Failed to delete selected logs.', error);
+      setLogs(previousLogs);
+      setSelectedLogIds(idsToDelete);
+      alert(`批量删除记录失败。\n\n${formatSupabaseError(error)}`);
+    }
   };
 
   const getLogsForBase = (baseId: string) =>
@@ -536,6 +596,10 @@ export default function App() {
 
     return () => window.removeEventListener('scroll', updateBackToTop);
   }, [showBackToTopControl]);
+
+  useEffect(() => {
+    if (!isEditing) setSelectedLogIds([]);
+  }, [isEditing]);
 
   const scrollToTop = useCallback(() => {
     window.scrollTo({
@@ -724,10 +788,9 @@ export default function App() {
         <>
           <AuthorTools
             isEditing={isEditing}
-            onAddLog={() => setShowAddLog(true)}
+            onAddLog={() => openCreateLog()}
             onAddBase={() => setShowAddBase(true)}
             onToggleEditing={() => setIsEditing((current) => !current)}
-            onResetData={handleResetData}
             isHockney={isHockney}
             isHockneySummer={isHockneySummer}
             isSanctuary={isSanctuary}
@@ -735,16 +798,35 @@ export default function App() {
           {!hasOpenModal && (
             <MobileAuthorTools
               isEditing={isEditing}
-              onAddLog={() => setShowAddLog(true)}
+              onAddLog={() => openCreateLog()}
               onAddBase={() => setShowAddBase(true)}
               onToggleEditing={() => setIsEditing((current) => !current)}
-              onResetData={handleResetData}
               isHockney={isHockney}
               isHockneySummer={isHockneySummer}
               isSanctuary={isSanctuary}
             />
           )}
         </>
+      )}
+
+      {isAuthor && isEditing && selectedLogIds.length > 0 && (
+        <div className={`fixed bottom-20 left-1/2 z-[78] flex -translate-x-1/2 items-center gap-3 rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] px-4 py-3 text-xs font-medium text-[#4D6B50] shadow-xl shadow-stone-900/10 xl:bottom-6 ${isHockneySummer ? 'hockney-summer-bulk-toolbar' : ''}`}>
+          <span>已选择 {selectedLogIds.length} 条记录</span>
+          <button
+            type="button"
+            onClick={() => setSelectedLogIds([])}
+            className="rounded-lg border border-[#DDE5D6] px-3 py-1.5 text-[#6B7E65] transition-colors hover:bg-[#F1F5EA]"
+          >
+            取消选择
+          </button>
+          <button
+            type="button"
+            onClick={handleDeleteSelectedLogs}
+            className="rounded-lg bg-rose-600 px-3 py-1.5 text-white transition-colors hover:bg-rose-700"
+          >
+            批量删除
+          </button>
+        </div>
       )}
 
       <AnimatePresence>
@@ -821,8 +903,17 @@ export default function App() {
             logs={activeBaseLogs}
             getWeatherIcon={getWeatherIcon}
             isEditing={isEditing}
+            selectedLogIds={selectedLogIds}
             onBack={() => setSelectedBaseId(null)}
+            onEditLog={openEditLog}
             onDeleteLog={handleDeleteLog}
+            onToggleLogSelection={(logId) =>
+              setSelectedLogIds((currentIds) =>
+                currentIds.includes(logId)
+                  ? currentIds.filter((id) => id !== logId)
+                  : [...currentIds, logId]
+              )
+            }
             isHockney={isHockney}
             isHockneySummer={isHockneySummer}
             isSanctuary={isSanctuary}
@@ -917,6 +1008,7 @@ export default function App() {
                     base={base}
                     getWeatherIcon={getWeatherIcon}
                     isEditing={isEditing}
+                    isSelected={selectedLogIds.includes(log.id)}
                     isHockney={isHockney}
                     isHockneySummer={isHockneySummer}
                     isSanctuary={isSanctuary}
@@ -925,7 +1017,15 @@ export default function App() {
                       setSelectedBaseId(log.baseId);
                       setActiveTab('bases');
                     }}
+                    onEdit={() => openEditLog(log.id)}
                     onDelete={() => handleDeleteLog(log.id)}
+                    onToggleSelection={() =>
+                      setSelectedLogIds((currentIds) =>
+                        currentIds.includes(log.id)
+                          ? currentIds.filter((id) => id !== log.id)
+                          : [...currentIds, log.id]
+                      )
+                    }
                   />
                 );
               })}
@@ -950,7 +1050,7 @@ export default function App() {
             title="回到顶部"
             aria-label="回到顶部"
             className={`fixed bottom-5 right-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] text-[#2F5D4A] shadow-lg shadow-emerald-950/10 transition-colors hover:bg-[#EEF4E8] sm:bottom-6 lg:right-[max(1rem,calc((100vw-72rem)/2-3.75rem))] ${
-              isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-back-to-top' : ''
+              isHockneySummer ? 'hockney-summer-back-to-top' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-back-to-top' : ''
             }`}
             initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -963,13 +1063,18 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showAddLog && (
+        {activeLogEditor && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <AddLogModal
               bases={[...bases, ROADSIDE_LOCATION]}
-              selectedBaseId={selectedBaseId}
-              onClose={() => setShowAddLog(false)}
-              onAddLog={handleAddLog}
+              mode={activeLogEditor.mode}
+              selectedBaseId={
+                activeLogEditor.mode === 'create' ? activeLogEditor.initialBaseId : selectedBaseId
+              }
+              initialLog={editingLog}
+              themeVariant={isHockneySummer ? 'hockneySummer' : 'default'}
+              onClose={() => setActiveLogEditor(null)}
+              onSaveLog={handleSaveLog}
             />
           </motion.div>
         )}
@@ -1269,7 +1374,6 @@ type AuthorToolProps = {
   onAddLog: () => void;
   onAddBase: () => void;
   onToggleEditing: () => void;
-  onResetData: () => void;
   isHockney?: boolean;
   isHockneySummer?: boolean;
   isSanctuary?: boolean;
@@ -1291,7 +1395,6 @@ const AuthorTools: React.FC<AuthorToolProps> = ({
   onAddLog,
   onAddBase,
   onToggleEditing,
-  onResetData,
   isHockney = false,
   isHockneySummer = false,
   isSanctuary = false
@@ -1333,15 +1436,6 @@ const AuthorTools: React.FC<AuthorToolProps> = ({
         <Pencil className="h-4 w-4" />
         {isEditing ? '完成' : '编辑'}
       </button>
-      <button
-        type="button"
-        onClick={onResetData}
-        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#6B7E65] shadow-sm transition-colors hover:bg-[#F1F5EA] hover:text-[#2F5D4A]"
-        title="恢复默认数据"
-      >
-        <RotateCcw className="h-4 w-4" />
-        恢复默认
-      </button>
     </aside>
   );
 };
@@ -1351,7 +1445,6 @@ const MobileAuthorTools: React.FC<AuthorToolProps> = ({
   onAddLog,
   onAddBase,
   onToggleEditing,
-  onResetData,
   isHockney = false,
   isHockneySummer = false,
   isSanctuary = false
@@ -1361,7 +1454,7 @@ const MobileAuthorTools: React.FC<AuthorToolProps> = ({
   return (
     <nav
       aria-label="作者工具"
-      className={`author-mobile-tools fixed inset-x-3 bottom-3 z-[75] grid grid-cols-4 gap-2 rounded-xl border border-[#DDE5D6] bg-[#FFFDF7]/95 p-2 shadow-xl shadow-stone-900/10 backdrop-blur xl:hidden ${themeClass}`}
+      className={`author-mobile-tools fixed inset-x-3 bottom-3 z-[75] grid grid-cols-3 gap-2 rounded-xl border border-[#DDE5D6] bg-[#FFFDF7]/95 p-2 shadow-xl shadow-stone-900/10 backdrop-blur xl:hidden ${themeClass}`}
     >
       <button
         type="button"
@@ -1390,15 +1483,6 @@ const MobileAuthorTools: React.FC<AuthorToolProps> = ({
       >
         <Pencil className="h-4 w-4" />
         {isEditing ? '完成' : '编辑'}
-      </button>
-      <button
-        type="button"
-        onClick={onResetData}
-        className="inline-flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-2 py-2 text-[11px] font-medium leading-none text-[#6B7E65] shadow-sm"
-        title="恢复默认"
-      >
-        <RotateCcw className="h-4 w-4" />
-        恢复
       </button>
     </nav>
   );
@@ -1540,8 +1624,11 @@ interface BaseDetailProps {
   logs: WalkLog[];
   getWeatherIcon: (weather: string) => React.ReactNode;
   isEditing: boolean;
+  selectedLogIds: string[];
   onBack: () => void;
+  onEditLog: (id: string) => void;
   onDeleteLog: (id: string) => void;
+  onToggleLogSelection: (id: string) => void;
   isHockney?: boolean;
   isHockneySummer?: boolean;
   isSanctuary?: boolean;
@@ -1553,8 +1640,11 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
   logs,
   getWeatherIcon,
   isEditing,
+  selectedLogIds,
   onBack,
+  onEditLog,
   onDeleteLog,
+  onToggleLogSelection,
   isHockney = false,
   isHockneySummer = false,
   isSanctuary = false,
@@ -1666,11 +1756,14 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
               log={log}
               getWeatherIcon={getWeatherIcon}
               isEditing={isEditing}
+              isSelected={selectedLogIds.includes(log.id)}
               isHockney={isHockney}
               isHockneySummer={isHockneySummer}
               isSanctuary={isSanctuary}
               palette={palette}
+              onEdit={() => onEditLog(log.id)}
               onDelete={() => onDeleteLog(log.id)}
+              onToggleSelection={() => onToggleLogSelection(log.id)}
             />
           ))
         )}
@@ -1688,8 +1781,11 @@ interface LogCardProps {
   isHockneySummer?: boolean;
   isSanctuary?: boolean;
   palette?: BasePalette;
+  isSelected?: boolean;
   onOpenBase?: () => void;
+  onEdit: () => void;
   onDelete: () => void;
+  onToggleSelection?: () => void;
 }
 
 const LogCard: React.FC<LogCardProps> = ({
@@ -1701,8 +1797,11 @@ const LogCard: React.FC<LogCardProps> = ({
   isHockneySummer = false,
   isSanctuary = false,
   palette,
+  isSelected = false,
   onOpenBase,
-  onDelete
+  onEdit,
+  onDelete,
+  onToggleSelection
 }) => {
   const photos = logPhotos(log);
   const [showActions, setShowActions] = useState(false);
@@ -1797,28 +1896,60 @@ const LogCard: React.FC<LogCardProps> = ({
       </div>
       </article>
       {isEditing && (
+        <label className={`absolute left-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#DDE5D6] bg-[#FFFDF7] text-[#2F5D4A] shadow-sm ${isHockneySummer ? 'hockney-summer-log-select' : ''}`}>
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onToggleSelection}
+            className={`h-4 w-4 accent-[#2F5D4A] ${isHockneySummer ? 'hockney-summer-checkbox' : ''}`}
+            aria-label="选择这条记录"
+          />
+        </label>
+      )}
+      {isEditing && (
         <button
           type="button"
           onClick={() => setShowActions((current) => !current)}
           title="更多操作"
           aria-expanded={showActions}
-          className="absolute right-3 top-3 hidden rounded-md border border-transparent bg-[#FFFDF7] p-1.5 text-[#8A987E] shadow-sm transition-colors hover:border-[#DDE5D6] hover:bg-[#F1F5EA] hover:text-[#2F5D4A] xl:block xl:-right-11 xl:border-[#E5DED3]"
+          className={`absolute right-3 top-3 hidden rounded-md border border-transparent bg-[#FFFDF7] p-1.5 text-[#8A987E] shadow-sm transition-colors hover:border-[#DDE5D6] hover:bg-[#F1F5EA] hover:text-[#2F5D4A] xl:block xl:-right-11 xl:border-[#E5DED3] ${isHockneySummer ? 'hockney-summer-action-trigger' : ''}`}
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
       )}
       {isEditing && (
-        <button
-          type="button"
-          onClick={onDelete}
-          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 shadow-sm transition-colors hover:bg-rose-100 xl:hidden"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-          删除
-        </button>
+        <div className="mt-2 flex flex-wrap gap-2 xl:hidden">
+          <button
+            type="button"
+            onClick={onEdit}
+            className={`inline-flex items-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] shadow-sm transition-colors hover:bg-[#EEF4E8] ${isHockneySummer ? 'hockney-summer-inline-action' : ''}`}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            编辑
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className={`inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 shadow-sm transition-colors hover:bg-rose-100 ${isHockneySummer ? 'hockney-summer-inline-action hockney-summer-inline-action-danger' : ''}`}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            删除
+          </button>
+        </div>
       )}
       {isEditing && showActions && (
-        <div className="absolute right-3 top-11 z-20 w-28 rounded-lg border border-[#E5DED3] bg-[#FFFDF7] p-1 shadow-lg shadow-stone-900/10 xl:-right-11">
+        <div className={`absolute right-3 top-11 z-20 w-32 rounded-lg border border-[#E5DED3] bg-[#FFFDF7] p-1 shadow-lg shadow-stone-900/10 xl:-right-11 ${isHockneySummer ? 'hockney-summer-action-menu' : ''}`}>
+          <button
+            type="button"
+            onClick={() => {
+              setShowActions(false);
+              onEdit();
+            }}
+            className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8]"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            编辑
+          </button>
           <button
             type="button"
             onClick={() => {

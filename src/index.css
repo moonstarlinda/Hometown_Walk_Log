@@ -607,6 +607,220 @@ g:hover .hockney-summer-map-marker {
   color: currentColor;
 }
 
+.hockney-summer-back-to-top {
+  border: 2px solid #0057d9;
+  border-radius: 0;
+  background: #fff8a6;
+  color: #0057d9;
+  box-shadow: 5px 5px 0 #f338c8;
+  font-weight: 900;
+}
+
+.hockney-summer-back-to-top:hover {
+  background: #16a9d8;
+  color: #ffffff;
+  box-shadow: 5px 5px 0 #0057d9;
+}
+
+.hockney-summer-bulk-toolbar {
+  border: 3px solid #0057d9;
+  border-radius: 0;
+  background: #fff8a6;
+  color: #0057d9;
+  box-shadow: 7px 7px 0 rgba(243, 56, 200, 0.34);
+  font-weight: 900;
+}
+
+.hockney-summer-bulk-toolbar button {
+  border: 2px solid #0057d9;
+  border-radius: 0;
+  background: #fff22e;
+  color: #0057d9;
+  box-shadow: 3px 3px 0 rgba(0, 87, 217, 0.2);
+  font-weight: 900;
+}
+
+.hockney-summer-bulk-toolbar button:last-child {
+  border-color: #0057d9;
+  background: #f338c8;
+  color: #ffffff;
+}
+
+.hockney-summer-log-select,
+.hockney-summer-action-trigger,
+.hockney-summer-inline-action,
+.hockney-summer-action-menu {
+  border: 2px solid #0057d9;
+  border-radius: 0;
+  background: #fff8a6;
+  color: #0057d9;
+  box-shadow: 4px 4px 0 rgba(0, 87, 217, 0.2);
+  font-weight: 900;
+}
+
+.hockney-summer-log-select {
+  background: #fff22e;
+}
+
+.hockney-summer-checkbox {
+  accent-color: #0057d9;
+}
+
+.hockney-summer-action-trigger:hover,
+.hockney-summer-inline-action:hover {
+  border-color: #0057d9;
+  background: #16a9d8;
+  color: #ffffff;
+  box-shadow: 4px 4px 0 #f338c8;
+}
+
+.hockney-summer-inline-action-danger {
+  background: #f338c8;
+  color: #ffffff;
+}
+
+.hockney-summer-inline-action-danger:hover {
+  background: #ff5a2d;
+  color: #ffffff;
+}
+
+.hockney-summer-action-menu {
+  padding: 0.25rem;
+  background: #fff8a6;
+  box-shadow: 7px 7px 0 rgba(243, 56, 200, 0.28);
+}
+
+.hockney-summer-action-menu button {
+  border-radius: 0;
+  color: #0057d9;
+  font-weight: 900;
+}
+
+.hockney-summer-action-menu button:hover {
+  background: #16a9d8;
+  color: #ffffff;
+}
+
+.hockney-summer-action-menu button:last-child {
+  color: #f338c8;
+}
+
+.hockney-summer-action-menu button:last-child:hover {
+  background: #f338c8;
+  color: #ffffff;
+}
+
+.hockney-summer-modal-shell {
+  background: rgba(0, 87, 217, 0.28);
+  backdrop-filter: blur(5px) saturate(1.15);
+  -webkit-backdrop-filter: blur(5px) saturate(1.15);
+}
+
+.hockney-summer-modal {
+  border: 3px solid #0057d9;
+  border-radius: 0;
+  background: #fff8a6;
+  color: #0057d9;
+  box-shadow: 9px 9px 0 #f338c8;
+}
+
+.hockney-summer-modal * {
+  border-radius: 0 !important;
+}
+
+.hockney-summer-modal > div:first-child,
+.hockney-summer-modal > div:last-child {
+  border-color: #0057d9;
+  background: #fff22e;
+}
+
+.hockney-summer-modal h3,
+.hockney-summer-modal label,
+.hockney-summer-modal p,
+.hockney-summer-modal span {
+  color: #0057d9;
+}
+
+.hockney-summer-modal input,
+.hockney-summer-modal select,
+.hockney-summer-modal textarea {
+  border: 2px solid #0057d9;
+  background: #fff8a6;
+  color: #0057d9;
+  box-shadow: 3px 3px 0 rgba(0, 87, 217, 0.16);
+  font-weight: 700;
+}
+
+.hockney-summer-modal input::placeholder,
+.hockney-summer-modal textarea::placeholder {
+  color: rgba(0, 87, 217, 0.58);
+}
+
+.hockney-summer-modal input:focus,
+.hockney-summer-modal select:focus,
+.hockney-summer-modal textarea:focus {
+  border-color: #f338c8;
+  background: #fff22e;
+  box-shadow: 4px 4px 0 rgba(243, 56, 200, 0.3);
+}
+
+.hockney-summer-modal form > div > div,
+.hockney-summer-modal label[class*="border-dashed"] {
+  border-color: #0057d9;
+  background: #fff8a6;
+}
+
+.hockney-summer-modal button {
+  border: 2px solid #0057d9;
+  border-radius: 0;
+  background: #fff8a6;
+  color: #0057d9;
+  box-shadow: 3px 3px 0 rgba(0, 87, 217, 0.18);
+  font-weight: 900;
+}
+
+.hockney-summer-modal button:hover {
+  background: #16a9d8;
+  color: #ffffff;
+  box-shadow: 4px 4px 0 #f338c8;
+}
+
+.hockney-summer-modal .hockney-summer-weather-option {
+  background: #fff8a6;
+  color: #0057d9;
+}
+
+.hockney-summer-modal .hockney-summer-weather-option-selected {
+  border-color: #0057d9;
+  background: #16a9d8;
+  color: #ffffff;
+  box-shadow: 5px 5px 0 #f338c8;
+}
+
+.hockney-summer-modal .hockney-summer-weather-option-selected span,
+.hockney-summer-modal .hockney-summer-weather-option-selected svg {
+  color: #ffffff;
+}
+
+.hockney-summer-modal button[class*="bg-emerald-800"] {
+  background: #16a9d8;
+  color: #ffffff;
+  box-shadow: 5px 5px 0 #f338c8;
+}
+
+.hockney-summer-modal button[class*="bg-emerald-800"]:hover {
+  background: #f338c8;
+  color: #ffffff;
+  box-shadow: 5px 5px 0 #0057d9;
+}
+
+.hockney-summer-modal button:disabled {
+  border-color: rgba(0, 87, 217, 0.4);
+  background: #fff8a6;
+  color: rgba(0, 87, 217, 0.48);
+  box-shadow: none;
+}
+
 .author-mobile-tools.hockney-summer-author-tools {
   inset-inline: 0.75rem;
   border: 3px solid #0057d9;
