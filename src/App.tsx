@@ -812,7 +812,7 @@ export default function App() {
                   role="menu"
                   aria-label="选择皮肤"
                   onMouseDown={(event) => event.stopPropagation()}
-                  className={`absolute right-0 top-full z-[120] mt-2 w-[190px] overflow-hidden rounded-lg border border-[#DDE5D6] p-2 text-xs shadow-[0_12px_32px_rgba(21,29,59,0.08)] transition-all duration-150 ${
+                  className={`absolute left-0 top-full z-[120] mt-2 w-[min(190px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-[#DDE5D6] p-2 text-xs shadow-[0_12px_32px_rgba(21,29,59,0.08)] transition-all duration-150 sm:right-0 sm:left-auto ${
                     themeMenuOpen ? 'pointer-events-auto visible translate-y-0 opacity-100' : 'pointer-events-none invisible -translate-y-1 opacity-0'
                   }`}
                   style={{
