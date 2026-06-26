@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowUp,
@@ -28,7 +28,8 @@ import {
   Sun,
   Trash2,
   TreePine,
-  Wind
+  Wind,
+  X
 } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { INITIAL_BASES, INITIAL_LOGS } from './data';
@@ -42,16 +43,19 @@ import { isSupabaseConfigured, supabase } from './lib/supabase';
 import {
   createBase,
   createLog,
+  deleteBase,
   deleteLog,
   deleteLogs,
   getBases,
   getLogs,
+  updateBase,
   updateLog
 } from './services/walkLogService';
 
 const INTRO_STORAGE_KEY = 'hometown_opening_intro_seen';
 const ROADSIDE_LOCATION_ID = 'roadside-observations';
 const AUTHOR_USER_ID = import.meta.env.VITE_AUTHOR_USER_ID ?? '';
+const AUTHOR_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 type Theme = 'default' | 'hockney' | 'hockneySummer' | 'sanctuary';
 type BasePalette = {
   accent: string;
@@ -62,6 +66,47 @@ type BasePalette = {
 type ActiveLogEditor =
   | { mode: 'create'; initialBaseId: string | null }
   | { mode: 'edit'; logId: string };
+type ActiveBaseEditor =
+  | { mode: 'create' }
+  | { mode: 'edit'; baseId: string };
+
+const THEME_VIEWPORT_BACKGROUNDS: Record<Theme, string> = {
+  default: '#F5F4EC',
+  hockney: '#DFF3FF',
+  sanctuary: '#F5F1E6',
+  hockneySummer: '#FFF22E'
+};
+const INTRO_VIEWPORT_BACKGROUND = '#243C32';
+
+function applyViewportBackground(background: string, theme?: Theme) {
+  const rootElement = document.getElementById('root');
+  const themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+
+  if (theme) {
+    document.documentElement.dataset.theme = theme;
+    document.body.dataset.theme = theme;
+    if (rootElement) rootElement.dataset.theme = theme;
+  }
+
+  document.documentElement.style.setProperty('--app-viewport-bg', background);
+  document.body.style.setProperty('--app-viewport-bg', background);
+  rootElement?.style.setProperty('--app-viewport-bg', background);
+
+  document.documentElement.style.backgroundColor = background;
+  document.body.style.backgroundColor = background;
+  if (rootElement) rootElement.style.backgroundColor = background;
+  if (themeColorMeta) themeColorMeta.content = background;
+}
+
+function repaintViewport() {
+  window.requestAnimationFrame(() => {
+    document.documentElement.classList.add('theme-repainting');
+    void document.documentElement.offsetHeight;
+    window.requestAnimationFrame(() => {
+      document.documentElement.classList.remove('theme-repainting');
+    });
+  });
+}
 
 const SANCTUARY_PALETTES: Record<string, BasePalette> = {
   'base-1': {
@@ -237,7 +282,7 @@ export default function App() {
   const [selectedBaseId, setSelectedBaseId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'bases' | 'timeline' | 'stats'>('bases');
   const [activeLogEditor, setActiveLogEditor] = useState<ActiveLogEditor | null>(null);
-  const [showAddBase, setShowAddBase] = useState(false);
+  const [activeBaseEditor, setActiveBaseEditor] = useState<ActiveBaseEditor | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedLogIds, setSelectedLogIds] = useState<string[]>([]);
   const [showIntro, setShowIntro] = useState(false);
@@ -257,7 +302,13 @@ export default function App() {
   const isHockneySummer = theme === 'hockneySummer';
   const isSanctuary = theme === 'sanctuary';
   const isAuthor = Boolean(AUTHOR_USER_ID && authUser?.id === AUTHOR_USER_ID);
-  const hasOpenModal = Boolean(activeLogEditor) || showAddBase || showAuthorLogin;
+  const hasOpenModal = Boolean(activeLogEditor) || Boolean(activeBaseEditor) || showAuthorLogin;
+
+  useLayoutEffect(() => {
+    const viewportBackground = THEME_VIEWPORT_BACKGROUNDS[theme];
+    applyViewportBackground(viewportBackground, theme);
+    repaintViewport();
+  }, [theme]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -281,7 +332,7 @@ export default function App() {
     };
   }, []);
 
-  const handleAuthorSignOut = async () => {
+  const handleAuthorSignOut = useCallback(async () => {
     if (!supabase) return;
 
     const { error } = await supabase.auth.signOut();
@@ -292,7 +343,39 @@ export default function App() {
     }
 
     setIsEditing(false);
-  };
+    setActiveLogEditor(null);
+    setActiveBaseEditor(null);
+    setSelectedLogIds([]);
+    setShowAuthorLogin(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthor || !supabase) return;
+
+    let idleTimer = window.setTimeout(handleAuthorSignOut, AUTHOR_IDLE_TIMEOUT_MS);
+    const resetIdleTimer = () => {
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(handleAuthorSignOut, AUTHOR_IDLE_TIMEOUT_MS);
+    };
+    const activityEvents: Array<keyof WindowEventMap> = [
+      'click',
+      'keydown',
+      'pointerdown',
+      'scroll',
+      'touchstart'
+    ];
+
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, resetIdleTimer, { passive: true });
+    });
+
+    return () => {
+      window.clearTimeout(idleTimer);
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, resetIdleTimer);
+      });
+    };
+  }, [handleAuthorSignOut, isAuthor]);
 
   useEffect(() => {
     let isMounted = true;
@@ -337,26 +420,34 @@ export default function App() {
   const finishIntro = useCallback(() => {
     localStorage.setItem(INTRO_STORAGE_KEY, 'true');
     setShowIntro(false);
-  }, []);
+    applyViewportBackground(THEME_VIEWPORT_BACKGROUNDS[theme], theme);
+    repaintViewport();
+  }, [theme]);
 
   const replayIntro = useCallback(() => {
     setSelectedBaseId(null);
     setActiveTab('bases');
+    applyViewportBackground(INTRO_VIEWPORT_BACKGROUND);
+    repaintViewport();
     setShowIntro(true);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!showIntro) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    applyViewportBackground(INTRO_VIEWPORT_BACKGROUND);
+    repaintViewport();
     const timer = window.setTimeout(finishIntro, 1600);
 
     return () => {
       window.clearTimeout(timer);
       document.body.style.overflow = previousOverflow;
+      applyViewportBackground(THEME_VIEWPORT_BACKGROUNDS[theme], theme);
+      repaintViewport();
     };
-  }, [finishIntro, showIntro]);
+  }, [finishIntro, showIntro, theme]);
 
   useEffect(() => {
     if (!themeMenuOpen) return;
@@ -392,6 +483,10 @@ export default function App() {
       ? ROADSIDE_LOCATION
       : bases.find((base) => base.id === selectedBaseId) ?? null
     : null;
+  const editingBase =
+    activeBaseEditor?.mode === 'edit'
+      ? bases.find((base) => base.id === activeBaseEditor.baseId) ?? null
+      : null;
 
   const activeBaseLogs = useMemo(() => {
     if (!selectedBaseId) return [];
@@ -487,7 +582,7 @@ export default function App() {
   };
 
   const handleAddBase = (
-    newBaseData: Omit<Base, 'id' | 'coverImage'> & { coverType: string }
+    newBaseData: Omit<Base, 'id' | 'coverImage'> & { coverType: string; coverImage?: string }
   ) => {
     const covers: Record<string, string> = {
       woodland:
@@ -502,26 +597,63 @@ export default function App() {
         'https://images.unsplash.com/photo-1533240332313-0db49b439ad3?auto=format&fit=crop&q=80&w=600'
     };
 
+    const baseId = activeBaseEditor?.mode === 'edit' ? activeBaseEditor.baseId : `base-${Date.now()}`;
+    const currentBase = activeBaseEditor?.mode === 'edit'
+      ? bases.find((base) => base.id === activeBaseEditor.baseId)
+      : null;
     const nextBaseData: Base = {
-      id: `base-${Date.now()}`,
+      id: baseId,
       title: newBaseData.title,
       subtitle: newBaseData.subtitle,
       description: newBaseData.description,
       location: newBaseData.location,
-      coverImage: covers[newBaseData.coverType] || covers.woodland
+      coverImage:
+        newBaseData.coverImage ||
+        (newBaseData.coverType === 'custom' ? currentBase?.coverImage : undefined) ||
+        covers[newBaseData.coverType] ||
+        covers.woodland
     };
 
-    createBase(nextBaseData)
-      .then((newBase) => {
-        setBases((currentBases) => [...currentBases, newBase]);
-        setShowAddBase(false);
-        setSelectedBaseId(newBase.id);
+    const saveBase = activeBaseEditor?.mode === 'edit' ? updateBase : createBase;
+
+    saveBase(nextBaseData)
+      .then((savedBase) => {
+        setBases((currentBases) =>
+          activeBaseEditor?.mode === 'edit'
+            ? currentBases.map((base) => (base.id === savedBase.id ? savedBase : base))
+            : [...currentBases, savedBase]
+        );
+        setActiveBaseEditor(null);
+        setSelectedBaseId(savedBase.id);
         setActiveTab('bases');
       })
       .catch((error) => {
         console.error('Failed to create base.', error);
-        alert(`保存新基地失败。\n\n${formatSupabaseError(error)}`);
+        alert(`保存基地失败。\n\n${formatSupabaseError(error)}`);
       });
+  };
+
+  const handleDeleteBase = async (baseId: string) => {
+    const baseToDelete = bases.find((base) => base.id === baseId);
+    if (!baseToDelete) return;
+
+    const baseLogs = logs.filter((log) => log.baseId === baseId);
+    if (baseLogs.length > 0) {
+      alert(`这个基地下还有 ${baseLogs.length} 条日志。为了避免日志失去归属，请先移动或删除这些日志后再删除基地。`);
+      return;
+    }
+
+    if (!confirm(`确定删除「${baseToDelete.title}」吗？此操作不能撤销。`)) return;
+
+    try {
+      await deleteBase(baseId);
+      setBases((currentBases) => currentBases.filter((base) => base.id !== baseId));
+      if (selectedBaseId === baseId) setSelectedBaseId(null);
+      setActiveTab('bases');
+    } catch (error) {
+      console.error('Failed to delete base.', error);
+      alert(`删除基地失败。\n\n${formatSupabaseError(error)}`);
+    }
   };
 
   const handleDeleteLog = async (logId: string) => {
@@ -608,13 +740,18 @@ export default function App() {
     });
   }, [prefersReducedMotion]);
 
+  const handleFilterDateChange = (event: React.FormEvent<HTMLInputElement>) => {
+    setFilterDate(event.currentTarget.value);
+  };
+
   return (
     <div
       className={`min-h-screen text-stone-800 antialiased ${
-        isHockneySummer ? 'hockney-summer-root' : isHockney ? 'hockney-root' : isSanctuary ? 'sanctuary-root' : 'bg-[#F5F4EC]'
+        isHockneySummer ? 'hockney-summer-root' : isHockney ? 'hockney-root' : isSanctuary ? 'sanctuary-root' : 'default-root'
       }`}
     >
       <header
+        key={theme}
         className={`sticky top-0 z-[70] border-b border-[#DDE5D6] bg-[#FAF9F1]/95 backdrop-blur ${
           isHockneySummer ? 'hockney-summer-header' : isHockney ? 'hockney-header' : isSanctuary ? 'sanctuary-header' : ''
         }`}
@@ -642,11 +779,11 @@ export default function App() {
               </span>
             </button>
 
-            <div className="order-3 flex w-full min-w-0 items-center gap-2 sm:order-none sm:w-auto sm:shrink-0">
+            <div className="order-3 ml-auto grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(72px,0.58fr)] items-center gap-2 sm:w-[min(100%,28rem)]">
               <div
                 role="group"
                 aria-label="视觉皮肤"
-                className="relative z-[90] min-w-0 flex-1 sm:flex-none"
+                className="relative z-[90] min-w-0"
                 ref={themeMenuRef}
               >
                 <button
@@ -656,7 +793,7 @@ export default function App() {
                   aria-label={`当前皮肤：${activeThemeOption.title}`}
                   title={`当前使用：${activeThemeOption.title}`}
                   onClick={() => setThemeMenuOpen((current) => !current)}
-                  className={`inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] shadow-sm transition-colors hover:bg-[#EEF4E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78A68B]/35 sm:w-auto ${
+                  className={`inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-2 text-xs font-medium text-[#2F5D4A] shadow-sm shadow-emerald-950/5 transition-colors hover:bg-[#EEF4E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78A68B]/35 lg:h-9 lg:px-3 ${
                     themeMenuOpen
                       ? 'ring-1 ring-[#D9E5D1]'
                       : ''
@@ -666,7 +803,7 @@ export default function App() {
                     <Palette className="h-4 w-4 shrink-0 text-[#5F8C53]" aria-hidden="true" />
                     <span className="truncate leading-none">{activeThemeOption.label}</span>
                   </span>
-                  <span className="ml-2 text-[10px] leading-none text-[#7B8C76]" aria-hidden="true">
+                  <span className="ml-1 text-[10px] leading-none text-[#7B8C76] lg:ml-2" aria-hidden="true">
                     ▾
                   </span>
                 </button>
@@ -679,9 +816,9 @@ export default function App() {
                     themeMenuOpen ? 'pointer-events-auto visible translate-y-0 opacity-100' : 'pointer-events-none invisible -translate-y-1 opacity-0'
                   }`}
                   style={{
-                    background: 'rgba(255, 253, 247, 0.96)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)'
+                    background: '#FFFDF7',
+                    backdropFilter: 'none',
+                    WebkitBackdropFilter: 'none'
                   }}
                 >
                   {THEME_OPTIONS.map((option) => {
@@ -720,29 +857,29 @@ export default function App() {
               <button
                 type="button"
                 onClick={replayIntro}
-                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8]"
+                className="inline-flex h-10 w-full min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-2 text-xs font-medium text-[#2F5D4A] shadow-sm shadow-emerald-950/5 transition-colors hover:bg-[#EEF4E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78A68B]/35 lg:h-9 lg:px-3"
               >
-                <RefreshCw className="h-4 w-4" />
-                重播开场
+                <RefreshCw className="h-4 w-4 shrink-0" />
+                <span className="truncate">重播开场</span>
               </button>
               {isAuthor ? (
                 <button
                   type="button"
                   onClick={handleAuthorSignOut}
                   title={authUser?.email ? `当前作者：${authUser.email}` : '退出作者登录'}
-                  className="order-2 inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8] sm:order-none"
+                  className="order-2 inline-flex h-10 w-full min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-2 text-xs font-medium text-[#2F5D4A] shadow-sm shadow-emerald-950/5 transition-colors hover:bg-[#EEF4E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78A68B]/35 lg:order-none lg:h-9 lg:px-3"
                 >
-                  <LogOut className="h-4 w-4" />
-                  退出
+                  <LogOut className="h-4 w-4 shrink-0" />
+                  <span className="truncate">退出</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={() => setShowAuthorLogin(true)}
-                  className="order-2 inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-3 py-2 text-xs font-medium text-[#2F5D4A] transition-colors hover:bg-[#EEF4E8] sm:order-none"
+                  className="order-2 inline-flex h-10 w-full min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[#C9D9C3] bg-[#FFFDF7] px-2 text-xs font-medium text-[#2F5D4A] shadow-sm shadow-emerald-950/5 transition-colors hover:bg-[#EEF4E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78A68B]/35 lg:order-none lg:h-9 lg:px-3"
                 >
-                  <LogIn className="h-4 w-4" />
-                  作者
+                  <LogIn className="h-4 w-4 shrink-0" />
+                  <span className="truncate">作者</span>
                 </button>
               )}
             </div>
@@ -789,7 +926,7 @@ export default function App() {
           <AuthorTools
             isEditing={isEditing}
             onAddLog={() => openCreateLog()}
-            onAddBase={() => setShowAddBase(true)}
+            onAddBase={() => setActiveBaseEditor({ mode: 'create' })}
             onToggleEditing={() => setIsEditing((current) => !current)}
             isHockney={isHockney}
             isHockneySummer={isHockneySummer}
@@ -799,7 +936,7 @@ export default function App() {
             <MobileAuthorTools
               isEditing={isEditing}
               onAddLog={() => openCreateLog()}
-              onAddBase={() => setShowAddBase(true)}
+              onAddBase={() => setActiveBaseEditor({ mode: 'create' })}
               onToggleEditing={() => setIsEditing((current) => !current)}
               isHockney={isHockney}
               isHockneySummer={isHockneySummer}
@@ -905,6 +1042,8 @@ export default function App() {
             isEditing={isEditing}
             selectedLogIds={selectedLogIds}
             onBack={() => setSelectedBaseId(null)}
+            onEditBase={() => setActiveBaseEditor({ mode: 'edit', baseId: activeBaseDetails.id })}
+            onDeleteBase={() => handleDeleteBase(activeBaseDetails.id)}
             onEditLog={openEditLog}
             onDeleteLog={handleDeleteLog}
             onToggleLogSelection={(logId) =>
@@ -924,40 +1063,58 @@ export default function App() {
         {activeTab === 'timeline' && (
           <section className={isHockneySummer ? 'hockney-summer-page space-y-5' : 'space-y-5'}>
             <div
-              className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7]/90 p-3 shadow-sm shadow-emerald-950/5 backdrop-blur ${
+              className={`timeline-filter-panel rounded-xl border border-[#DDE5D6] bg-[#FFFDF7]/90 p-3 shadow-sm shadow-emerald-950/5 backdrop-blur ${
                 isHockneySummer ? 'hockney-summer-panel' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
               }`}
             >
-              <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-[minmax(260px,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
-                <label className="group relative">
+              <div className="grid min-w-0 grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-[minmax(260px,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                <label className="group relative min-w-0">
                   <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A987E] transition-colors group-focus-within:text-[#2F5D4A]" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="搜索记录、天气或标签"
-                    className={`h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-[#8A987E] focus:border-[#7FA06E] focus:bg-[#FFFDF7] ${
+                    className={`box-border h-12 min-w-0 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-[#8A987E] focus:border-[#7FA06E] focus:bg-[#FFFDF7] ${
                       isHockneySummer ? 'hockney-summer-field' : ''
                     }`}
                   />
                 </label>
-                <label className="group relative">
+                <label className="group relative min-w-0">
                   <Calendar className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A987E] transition-colors group-focus-within:text-[#2F5D4A]" />
                   <input
                     type="date"
                     value={filterDate}
-                    onChange={(event) => setFilterDate(event.target.value)}
-                    className={`h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7] ${
+                    onChange={handleFilterDateChange}
+                    onInput={handleFilterDateChange}
+                    onBlur={handleFilterDateChange}
+                    className={`timeline-filter-date box-border h-12 min-w-0 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-12 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7] ${
                       isHockneySummer ? 'hockney-summer-field' : ''
                     }`}
                   />
+                  {filterDate && (
+                    <button
+                      type="button"
+                      aria-label="清除日期筛选"
+                      title="清除日期筛选"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setFilterDate('');
+                      }}
+                      className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[#7D8C74] transition-colors hover:bg-[#EEF4E8] hover:text-[#2F5D4A]"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                 </label>
-                <label className="group relative">
+                <label className="group relative min-w-0">
                   <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A987E] transition-colors group-focus-within:text-[#2F5D4A]" />
                   <select
                     value={filterBaseId}
                     onChange={(event) => setFilterBaseId(event.target.value)}
-                    className={`h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7] ${
+                    className={`box-border h-12 min-w-0 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7] ${
                       isHockneySummer ? 'hockney-summer-field' : ''
                     }`}
                   >
@@ -970,12 +1127,12 @@ export default function App() {
                     <option value={ROADSIDE_LOCATION_ID}>途中见闻</option>
                   </select>
                 </label>
-                <label className="group relative">
+                <label className="group relative min-w-0">
                   <Cloud className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A987E] transition-colors group-focus-within:text-[#2F5D4A]" />
                   <select
                     value={filterWeather}
                     onChange={(event) => setFilterWeather(event.target.value)}
-                    className={`h-12 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7] ${
+                    className={`box-border h-12 min-w-0 w-full rounded-lg border border-[#DDE5D6] bg-[#FAF9F1] pl-10 pr-3 text-sm text-stone-800 outline-none transition-colors focus:border-[#7FA06E] focus:bg-[#FFFDF7] ${
                       isHockneySummer ? 'hockney-summer-field' : ''
                     }`}
                   >
@@ -1079,9 +1236,15 @@ export default function App() {
           </motion.div>
         )}
 
-        {showAddBase && (
+        {activeBaseEditor && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <AddBaseModal onClose={() => setShowAddBase(false)} onAddBase={handleAddBase} />
+            <AddBaseModal
+              mode={activeBaseEditor.mode}
+              initialBase={editingBase}
+              themeVariant={isHockneySummer ? 'hockneySummer' : 'default'}
+              onClose={() => setActiveBaseEditor(null)}
+              onAddBase={handleAddBase}
+            />
           </motion.div>
         )}
 
@@ -1089,6 +1252,7 @@ export default function App() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <AuthorLoginModal
               authorUserId={AUTHOR_USER_ID}
+              themeVariant={isHockneySummer ? 'hockneySummer' : 'default'}
               onClose={() => setShowAuthorLogin(false)}
             />
           </motion.div>
@@ -1104,17 +1268,18 @@ const OpeningIntro: React.FC<{
 }> = ({ prefersReducedMotion, onSkip }) => {
   return (
     <motion.section
-      className="fixed inset-0 z-[80] isolate flex min-h-svh overflow-hidden bg-[#243C32]"
+      className="opening-intro isolate flex"
       aria-label="乡野漫步开场"
       initial={prefersReducedMotion ? false : { opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
+      <div className="opening-intro-safe-area" aria-hidden="true" />
       <motion.img
         src={openingWalkingIntoForest}
         alt="林荫散步路"
-        className="absolute inset-0 h-full w-full object-cover object-center"
+        className="opening-intro-media object-cover object-center"
         initial={prefersReducedMotion ? false : { scale: 1 }}
         animate={prefersReducedMotion ? { scale: 1 } : { scale: 1.075 }}
         transition={{ duration: 1.75, ease: [0.22, 1, 0.36, 1] }}
@@ -1126,7 +1291,7 @@ const OpeningIntro: React.FC<{
         <button
           type="button"
           onClick={onSkip}
-          className="absolute right-4 top-4 z-10 rounded-lg border border-[#F8F4DD]/35 bg-[#243C32]/45 px-3 py-2 text-xs font-medium text-[#FFFDF4] backdrop-blur-sm transition-colors hover:bg-[#243C32]/65 sm:right-6 sm:top-6"
+          className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top,0px))] z-10 rounded-lg border border-[#F8F4DD]/35 bg-[#243C32]/45 px-3 py-2 text-xs font-medium text-[#FFFDF4] backdrop-blur-sm transition-colors hover:bg-[#243C32]/65 sm:right-6 sm:top-6"
         >
           跳过
         </button>
@@ -1156,8 +1321,10 @@ const OpeningIntro: React.FC<{
 
 const AuthorLoginModal: React.FC<{
   authorUserId: string;
+  themeVariant?: 'default' | 'hockneySummer';
   onClose: () => void;
-}> = ({ authorUserId, onClose }) => {
+}> = ({ authorUserId, themeVariant = 'default', onClose }) => {
+  const isHockneySummer = themeVariant === 'hockneySummer';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1195,10 +1362,16 @@ const AuthorLoginModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-[130] flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-xs">
+    <div
+      className={`fixed inset-0 z-[130] flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-xs ${
+        isHockneySummer ? 'hockney-summer-modal-shell' : ''
+      }`}
+    >
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-xl shadow-stone-900/10"
+        className={`w-full max-w-sm rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-xl shadow-stone-900/10 ${
+          isHockneySummer ? 'hockney-summer-modal hockney-summer-login-modal' : ''
+        }`}
       >
         <div className="mb-4">
           <h2 className="font-serif text-xl font-semibold text-[#243C32]">作者登录</h2>
@@ -1626,6 +1799,8 @@ interface BaseDetailProps {
   isEditing: boolean;
   selectedLogIds: string[];
   onBack: () => void;
+  onEditBase: () => void;
+  onDeleteBase: () => void;
   onEditLog: (id: string) => void;
   onDeleteLog: (id: string) => void;
   onToggleLogSelection: (id: string) => void;
@@ -1642,6 +1817,8 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
   isEditing,
   selectedLogIds,
   onBack,
+  onEditBase,
+  onDeleteBase,
   onEditLog,
   onDeleteLog,
   onToggleLogSelection,
@@ -1651,6 +1828,7 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
   palette
 }) => {
   const accent = palette?.accent ?? '#2F5D4A';
+  const canEditBase = isEditing && base.id !== ROADSIDE_LOCATION_ID;
 
   return (
     <section className={isHockneySummer ? 'hockney-summer-page space-y-3' : 'space-y-3'}>
@@ -1675,6 +1853,28 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
         <ArrowLeft className="h-4 w-4" />
         返回首页
       </button>
+      {canEditBase && (
+        <div className="relative z-10 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onEditBase}
+            className={`inline-flex items-center gap-1.5 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-1.5 text-xs font-medium text-[#5B7055] transition-colors hover:bg-[#EEF4E8] hover:text-[#2F5D4A] ${
+              isHockneySummer ? 'hockney-summer-back-button' : isSanctuary ? 'sanctuary-back-button' : ''
+            }`}
+          >
+            <Pencil className="h-4 w-4" />
+            编辑基地
+          </button>
+          <button
+            type="button"
+            onClick={onDeleteBase}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            删除基地
+          </button>
+        </div>
+      )}
 
       <div
         className={`overflow-hidden rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] shadow-sm shadow-emerald-950/5 ${

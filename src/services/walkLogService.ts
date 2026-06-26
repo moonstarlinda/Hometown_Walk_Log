@@ -2,8 +2,9 @@ import { getSupabaseClient } from '../lib/supabase';
 import { Base, WalkLog } from '../types';
 
 const PHOTO_BUCKET = import.meta.env.VITE_SUPABASE_PHOTO_BUCKET ?? 'walk-log-photos';
-const PHOTO_MAX_DIMENSION = 1600;
-const PHOTO_COMPRESSION_QUALITY = 0.82;
+const PHOTO_MAX_DIMENSION = 1280;
+const PHOTO_COMPRESSION_QUALITY = 0.72;
+const PHOTO_UPLOAD_TIMEOUT_MS = 45000;
 
 type BaseRow = {
   id: string;
@@ -88,6 +89,39 @@ export async function createBase(base: Base): Promise<Base> {
 
   if (error) throw error;
   return mapBase(data as BaseRow);
+}
+
+export async function updateBase(base: Base): Promise<Base> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('bases')
+    .update({
+      title: base.title,
+      subtitle: base.subtitle,
+      description: base.description,
+      location: base.location,
+      cover_image: base.coverImage
+    })
+    .eq('id', base.id)
+    .select('id,title,subtitle,description,location,cover_image')
+    .single();
+
+  if (error) throw error;
+  return mapBase(data as BaseRow);
+}
+
+export async function deleteBase(baseId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('bases')
+    .delete()
+    .eq('id', baseId)
+    .select('id');
+
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('没有删除任何基地。请确认你已用作者账号登录，并且 RLS delete 策略允许当前用户删除 bases。');
+  }
 }
 
 export async function createLog(log: WalkLog): Promise<WalkLog> {
@@ -176,18 +210,19 @@ function fileExtension(fileName: string, contentType?: string) {
   return mimeExtension && /^[a-z0-9]+$/.test(mimeExtension) ? mimeExtension : 'jpg';
 }
 
-function makePhotoPath(extension: string) {
+function makePhotoPath(extension: string, folder = 'logs') {
   const now = new Date();
   const year = now.getFullYear();
   const month = `${now.getMonth() + 1}`.padStart(2, '0');
   const random = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-  return `logs/${year}/${month}/${Date.now()}-${random}.${extension}`;
+  return `${folder}/${year}/${month}/${Date.now()}-${random}.${extension}`;
 }
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = document.createElement('img');
     const objectUrl = URL.createObjectURL(file);
+    image.decoding = 'async';
 
     image.onload = () => {
       URL.revokeObjectURL(objectUrl);
@@ -212,9 +247,19 @@ function canvasToBlob(
 function isCompressiblePhoto(file: File) {
   return (
     file.type.startsWith('image/') &&
+    file.type !== 'image/heic' &&
+    file.type !== 'image/heif' &&
     file.type !== 'image/gif' &&
     file.type !== 'image/svg+xml'
   );
+}
+
+function uploadTimeout(fileName: string) {
+  return new Promise<never>((_, reject) => {
+    window.setTimeout(() => {
+      reject(new Error(`Photo upload timed out: ${fileName || 'unnamed photo'}`));
+    }, PHOTO_UPLOAD_TIMEOUT_MS);
+  });
 }
 
 async function compressPhoto(file: File): Promise<UploadablePhoto> {
@@ -243,15 +288,6 @@ async function compressPhoto(file: File): Promise<UploadablePhoto> {
 
     context.drawImage(image, 0, 0, width, height);
 
-    const webpBlob = await canvasToBlob(canvas, 'image/webp', PHOTO_COMPRESSION_QUALITY);
-    if (webpBlob && webpBlob.size < file.size) {
-      return {
-        body: webpBlob,
-        extension: 'webp',
-        contentType: 'image/webp'
-      };
-    }
-
     const jpegBlob = await canvasToBlob(canvas, 'image/jpeg', PHOTO_COMPRESSION_QUALITY);
     if (jpegBlob && jpegBlob.size < file.size) {
       return {
@@ -276,13 +312,14 @@ export async function uploadLogPhotos(files: File[]): Promise<string[]> {
   for (const file of files) {
     const uploadablePhoto = await compressPhoto(file);
     const path = makePhotoPath(uploadablePhoto.extension);
-    const { error } = await supabase.storage
+    const uploadPromise = supabase.storage
       .from(PHOTO_BUCKET)
       .upload(path, uploadablePhoto.body, {
         cacheControl: '31536000',
         contentType: uploadablePhoto.contentType,
         upsert: false
       });
+    const { error } = await Promise.race([uploadPromise, uploadTimeout(file.name)]);
 
     if (error) throw error;
 
@@ -291,4 +328,23 @@ export async function uploadLogPhotos(files: File[]): Promise<string[]> {
   }
 
   return uploadedUrls;
+}
+
+export async function uploadBaseCover(file: File): Promise<string> {
+  const supabase = getSupabaseClient();
+  const uploadablePhoto = await compressPhoto(file);
+  const path = makePhotoPath(uploadablePhoto.extension, 'bases');
+  const uploadPromise = supabase.storage
+    .from(PHOTO_BUCKET)
+    .upload(path, uploadablePhoto.body, {
+      cacheControl: '31536000',
+      contentType: uploadablePhoto.contentType,
+      upsert: false
+    });
+  const { error } = await Promise.race([uploadPromise, uploadTimeout(file.name)]);
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
 }

@@ -3,21 +3,54 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Base } from '../types';
-import { X, Save, Plus, MapPin } from 'lucide-react';
+import { Camera, Image, MapPin, Save, Upload, X } from 'lucide-react';
+import { uploadBaseCover } from '../services/walkLogService';
 
 interface AddBaseModalProps {
+  mode?: 'create' | 'edit';
+  initialBase?: Base | null;
+  themeVariant?: 'default' | 'hockneySummer';
   onClose: () => void;
-  onAddBase: (base: Omit<Base, 'id' | 'coverImage'> & { coverType: string }) => void;
+  onAddBase: (base: Omit<Base, 'id' | 'coverImage'> & { coverType: string; coverImage?: string }) => void;
 }
 
-export default function AddBaseModal({ onClose, onAddBase }: AddBaseModalProps) {
-  const [title, setTitle] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [location, setLocation] = useState('');
-  const [coverType, setCoverType] = useState('woodland'); // woodland, river, mountain, lake, meadow
+export default function AddBaseModal({
+  mode = 'create',
+  initialBase = null,
+  themeVariant = 'default',
+  onClose,
+  onAddBase
+}: AddBaseModalProps) {
+  const isHockneySummer = themeVariant === 'hockneySummer';
+  const [title, setTitle] = useState(initialBase?.title ?? '');
+  const [subtitle, setSubtitle] = useState(initialBase?.subtitle ?? '');
+  const [description, setDescription] = useState(initialBase?.description ?? '');
+  const [location, setLocation] = useState(initialBase?.location ?? '');
+  const [coverType, setCoverType] = useState(initialBase?.coverImage ? 'custom' : 'woodland'); // woodland, river, mountain, lake, meadow, custom
+  const [coverImageUrl, setCoverImageUrl] = useState(initialBase?.coverImage ?? '');
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const localCoverInputRef = useRef<HTMLInputElement | null>(null);
+  const albumCoverInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraCoverInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleUploadCover = async (fileList: FileList | null) => {
+    const file = Array.from(fileList ?? []).find((item) => item.type.startsWith('image/'));
+    if (!file) return;
+
+    setIsUploadingCover(true);
+    try {
+      const uploadedUrl = await uploadBaseCover(file);
+      setCoverImageUrl(uploadedUrl);
+      setCoverType('custom');
+    } catch (error) {
+      console.error('Failed to upload base cover.', error);
+      alert('封面上传失败。请确认 Supabase Storage bucket 已创建，并允许作者账号上传图片。');
+    } finally {
+      setIsUploadingCover(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,10 +61,11 @@ export default function AddBaseModal({ onClose, onAddBase }: AddBaseModalProps) 
 
     onAddBase({
       title: title.trim(),
-      subtitle: subtitle.trim() || 'Custom Wander Spot',
+      subtitle: subtitle.trim() || initialBase?.subtitle || 'Custom Wander Spot',
       description: description.trim(),
       location: location.trim(),
-      coverType
+      coverType,
+      ...(coverType === 'custom' && coverImageUrl ? { coverImage: coverImageUrl } : {})
     });
   };
 
@@ -44,8 +78,16 @@ export default function AddBaseModal({ onClose, onAddBase }: AddBaseModalProps) 
   ];
 
   return (
-    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-xs">
-      <div className="bg-[#FAF9F5] border border-stone-200 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden max-h-[85vh] flex flex-col">
+    <div
+      className={`fixed inset-0 z-[130] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-xs ${
+        isHockneySummer ? 'hockney-summer-modal-shell' : ''
+      }`}
+    >
+      <div
+        className={`bg-[#FAF9F5] border border-stone-200 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden max-h-[85vh] flex flex-col ${
+          isHockneySummer ? 'hockney-summer-modal hockney-summer-base-modal' : ''
+        }`}
+      >
         {/* Header */}
         <div className="p-5 border-b border-stone-200/60 bg-white flex justify-between items-center">
           <div>
@@ -53,7 +95,7 @@ export default function AddBaseModal({ onClose, onAddBase }: AddBaseModalProps) 
               <span className="p-1 bg-emerald-50 text-emerald-800 rounded-md">
                 <MapPin className="w-4 h-4" />
               </span>
-              标记并记录一处新的秘密基地
+              {mode === 'edit' ? '编辑基地资料' : '标记并记录一处新的秘密基地'}
             </h3>
             <p className="text-xs text-stone-500 mt-1">
               在你散步环线的山野林泉中发现新视角？立即绘制并加入地图卡组。
@@ -119,7 +161,59 @@ export default function AddBaseModal({ onClose, onAddBase }: AddBaseModalProps) 
             <label className="block text-xs font-serif font-bold text-stone-700 mb-1.5">
               4. 选取明信片封面 Nature Vibe *
             </label>
+            <input
+              ref={localCoverInputRef}
+              type="file"
+              accept="image/*"
+              disabled={isUploadingCover}
+              onChange={(event) => {
+                handleUploadCover(event.target.files);
+                event.currentTarget.value = '';
+              }}
+              className="sr-only"
+            />
+            <input
+              ref={albumCoverInputRef}
+              type="file"
+              accept="image/*"
+              disabled={isUploadingCover}
+              onChange={(event) => {
+                handleUploadCover(event.target.files);
+                event.currentTarget.value = '';
+              }}
+              className="sr-only"
+            />
+            <input
+              ref={cameraCoverInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              disabled={isUploadingCover}
+              onChange={(event) => {
+                handleUploadCover(event.target.files);
+                event.currentTarget.value = '';
+              }}
+              className="sr-only"
+            />
             <div className="grid grid-cols-1 gap-2 max-h-[140px] overflow-y-auto p-2 border border-stone-200/50 rounded-xl bg-stone-50/50">
+              {coverImageUrl && (
+                <button
+                  type="button"
+                  onClick={() => setCoverType('custom')}
+                  className={`flex items-center gap-3 p-1.5 rounded-lg border text-left text-xs transition-colors ${
+                    coverType === 'custom'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-medium'
+                      : 'bg-white border-stone-100 hover:border-stone-200 text-stone-600'
+                  }`}
+                >
+                  <img
+                    src={coverImageUrl}
+                    alt="自定义封面"
+                    className="w-10 h-7 object-cover rounded-md"
+                  />
+                  <span className="truncate">自定义封面 Custom Cover</span>
+                </button>
+              )}
               {coverOptions.map(opt => {
                 const isSelected = coverType === opt.type;
                 return (
@@ -143,6 +237,35 @@ export default function AddBaseModal({ onClose, onAddBase }: AddBaseModalProps) 
                   </button>
                 );
               })}
+            </div>
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <button
+                type="button"
+                onClick={() => localCoverInputRef.current?.click()}
+                disabled={isUploadingCover}
+                className="hidden items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-600 transition-colors hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 sm:inline-flex"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                {isUploadingCover ? '上传中...' : '选本地文件'}
+              </button>
+              <button
+                type="button"
+                onClick={() => albumCoverInputRef.current?.click()}
+                disabled={isUploadingCover}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-600 transition-colors hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 sm:hidden"
+              >
+                <Image className="h-3.5 w-3.5" />
+                {isUploadingCover ? '上传中...' : '从相册中选'}
+              </button>
+              <button
+                type="button"
+                onClick={() => cameraCoverInputRef.current?.click()}
+                disabled={isUploadingCover}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-600 transition-colors hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 sm:hidden"
+              >
+                <Camera className="h-3.5 w-3.5" />
+                {isUploadingCover ? '上传中...' : '拍照'}
+              </button>
             </div>
           </div>
 
@@ -175,10 +298,11 @@ export default function AddBaseModal({ onClose, onAddBase }: AddBaseModalProps) 
           <button
             type="button"
             onClick={handleSubmit}
+            disabled={isUploadingCover}
             className="px-6 py-2 text-xs bg-emerald-800 hover:bg-emerald-950 rounded-xl font-semibold text-white transition-colors flex items-center gap-1.5"
           >
             <Save className="w-4 h-4" />
-            建立并发布此基地
+            {isUploadingCover ? '封面上传中...' : mode === 'edit' ? '保存基地修改' : '建立并发布此基地'}
           </button>
         </div>
       </div>

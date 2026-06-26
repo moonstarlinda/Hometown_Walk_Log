@@ -523,7 +523,6 @@ export default function AddLogModal({
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
                 multiple
                 disabled={isUploadingPhotos}
                 onChange={(event) => {

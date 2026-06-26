@@ -125,9 +125,50 @@ export default function WalkMap({
 
           {isHockneySummer && (
             <g className="hockney-summer-map-blocks" aria-hidden="true">
-              <path d="M 0 0 H 295 L 230 120 L 0 138 Z" fill="#14B85A" />
-              <path d="M 520 0 H 820 V 132 L 668 110 Z" fill="#F338C8" />
-              <path d="M 580 220 L 820 162 V 360 H 616 Z" fill="#16A9D8" />
+              <path
+                d="M -26 8 C 32 -18 88 12 146 -4 C 206 -20 276 2 318 42 C 276 70 274 106 226 126 C 160 154 58 148 -20 118 C -38 78 -44 34 -26 8 Z"
+                fill="#14B85A"
+              />
+              <path
+                d="M 504 -22 C 564 22 632 -28 710 4 C 782 34 830 44 852 96 C 812 132 734 134 668 106 C 626 88 600 56 548 44 C 518 36 498 8 504 -22 Z"
+                fill="#F338C8"
+              />
+              <path
+                d="M 568 236 C 620 196 694 204 748 174 C 800 146 846 178 856 234 V 386 H 612 C 596 352 550 314 552 274 C 554 258 558 246 568 236 Z"
+                fill="#16A9D8"
+              />
+              <path
+                d="M 270 20 C 334 -12 434 4 506 34 C 572 62 622 88 690 82 C 666 116 606 136 536 126 C 476 118 424 86 360 98 C 296 110 238 100 214 72 C 220 46 242 30 270 20 Z"
+                fill="#7AC943"
+              />
+              <path
+                d="M 10 252 C 76 218 144 262 202 276 C 252 288 292 340 354 314 C 332 354 256 374 178 362 C 104 352 28 338 -24 292 Z"
+                fill="#FFB000"
+              />
+              <path
+                d="M 360 316 C 418 280 502 286 560 300 C 620 314 670 338 742 302 C 724 342 650 366 560 366 C 488 366 422 338 350 354 Z"
+                fill="#8ACB3F"
+              />
+              <path
+                d="M 182 334 C 216 304 274 296 334 318 C 322 346 278 364 218 368 C 190 368 170 356 182 334 Z"
+                fill="#B98DEB"
+              />
+              <path
+                d="M 374 142 C 428 104 504 118 566 132 C 622 144 670 132 718 112 C 690 154 620 176 540 170 C 468 164 418 168 356 190 C 344 172 350 156 374 142 Z"
+                fill="#CDEB59"
+              />
+              <g className="hockney-summer-map-trees">
+                <path d="M 84 294 C 76 274 86 252 96 235 C 108 254 116 276 106 294 Z" fill="#007A5E" />
+                <path d="M 106 292 C 100 274 108 252 118 236 C 130 256 136 276 128 292 Z" fill="#0B8B65" />
+                <path d="M 696 246 C 688 222 700 198 714 184 C 730 206 738 230 728 246 Z" fill="#007A5E" />
+                <path d="M 724 256 C 716 230 728 204 744 188 C 762 212 770 238 760 256 Z" fill="#006B57" />
+                <path d="M 742 264 C 736 240 748 218 762 202 C 778 224 786 246 776 264 Z" fill="#0B8B65" />
+              </g>
+              <g className="hockney-summer-map-dashes">
+                <path d="M 324 18 l 6 6 M 342 24 l 5 7 M 362 18 l 7 5 M 382 30 l 5 7 M 404 20 l 7 5 M 424 32 l 5 7" />
+                <path d="M 104 326 l 18 -5 M 132 334 l 20 -6 M 162 342 l 20 -5 M 198 350 l 18 -5" />
+                <path d="M 492 334 l 22 -5 M 526 342 l 22 -6 M 560 348 l 24 -5" />
+              </g>
             </g>
           )}
 
@@ -187,10 +228,10 @@ export default function WalkMap({
                     y={pos.y - (active || hovered ? 25 : 21)}
                     width={active || hovered ? 50 : 42}
                     height={active || hovered ? 50 : 42}
-                    rx="6"
-                    fill={active ? '#F338C8' : hovered ? '#FFF22E' : '#FFF8A6'}
-                    stroke="#0057D9"
-                    strokeWidth="2.5"
+                    rx="12"
+                    fill={active ? '#F338C8' : hovered ? '#FFB199' : 'rgba(255, 226, 232, 0.94)'}
+                    stroke={active ? '#4E8B5B' : '#F338C8'}
+                    strokeWidth={active || hovered ? '2.5' : '2'}
                     className="hockney-summer-map-marker transition-all"
                   />
                 )}
@@ -211,7 +252,9 @@ export default function WalkMap({
                     isHockneySummer
                       ? active
                         ? '#F338C8'
-                        : '#16A9D8'
+                        : hovered
+                          ? '#FF5A2D'
+                          : '#FF8A6A'
                       : isHockney
                       ? active
                         ? '#1F9CC1'
@@ -228,7 +271,7 @@ export default function WalkMap({
                   }
                   stroke={
                     isHockneySummer
-                      ? '#0057D9'
+                      ? '#4E8B5B'
                       : isHockney
                       ? active
                         ? '#0D7192'
@@ -253,7 +296,7 @@ export default function WalkMap({
                     active
                         ? 'fill-[#FFFDF4]'
                       : isHockneySummer
-                        ? 'fill-[#0057D9]'
+                        ? 'fill-[#235F46]'
                       : isSanctuary
                         ? 'fill-[#243C32]'
                         : 'fill-[#3F5F43]'
