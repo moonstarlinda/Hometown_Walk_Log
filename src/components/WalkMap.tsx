@@ -22,11 +22,23 @@ const SANCTUARY_COLORS: Record<string, { accent: string; soft: string; text: str
   'base-2': { accent: '#4E8B5B', soft: 'color-mix(in srgb, #4E8B5B 12%, white)', text: '#4E8B5B' },
   'base-3': { accent: '#4B4E6D', soft: 'color-mix(in srgb, #4B4E6D 12%, white)', text: '#4B4E6D' },
   'base-4': { accent: '#D98C3A', soft: 'color-mix(in srgb, #D98C3A 12%, white)', text: '#D98C3A' },
-  'base-5': { accent: '#7A5C8C', soft: 'color-mix(in srgb, #7A5C8C 12%, white)', text: '#7A5C8C' }
+  'base-5': { accent: '#7A5C8C', soft: 'color-mix(in srgb, #7A5C8C 12%, white)', text: '#7A5C8C' },
+  'base-6': { accent: '#8A7A45', soft: 'color-mix(in srgb, #8A7A45 12%, white)', text: '#6F6238' }
 };
 
 function sanctuaryColorForBase(baseId: string) {
   return SANCTUARY_COLORS[baseId] ?? { accent: '#7A7F68', soft: '#ECEBDD', text: '#5C624D' };
+}
+
+function isDoubleTreeBenchBase(base: Base) {
+  return /06号基地|双树长椅|雙樹長椅/.test(base.title);
+}
+
+function getLabelOffset(base: Base) {
+  if (base.id === 'base-2') return { x: -34, y: -36 };
+  if (base.id === 'base-3') return { x: -6, y: -46 };
+  if (isDoubleTreeBenchBase(base)) return { x: -30, y: -52 };
+  return { x: 0, y: -28 };
 }
 
 export default function WalkMap({
@@ -43,13 +55,15 @@ export default function WalkMap({
   const fixedPositions: Record<string, { x: number; y: number }> = {
     'base-1': { x: 540, y: 220 },
     'base-2': { x: 660, y: 175 },
-    'base-3': { x: 760, y: 130 },
+    'base-3': { x: 792, y: 138 },
     'base-4': { x: 340, y: 300 },
-    'base-5': { x: 85, y: 140 }
+    'base-5': { x: 82, y: 195 },
+    'base-6': { x: 705, y: 160 }
   };
 
-  const getPosition = (id: string, index: number) => {
-    if (fixedPositions[id]) return fixedPositions[id];
+  const getPosition = (base: Base, index: number) => {
+    if (fixedPositions[base.id]) return fixedPositions[base.id];
+    if (isDoubleTreeBenchBase(base)) return fixedPositions['base-6'];
 
     const angle = (index / Math.max(bases.length, 1)) * Math.PI * 2;
     return {
@@ -126,36 +140,24 @@ export default function WalkMap({
           {isHockneySummer && (
             <g className="hockney-summer-map-blocks" aria-hidden="true">
               <path
-                d="M -26 8 C 32 -18 88 12 146 -4 C 206 -20 276 2 318 42 C 276 70 274 106 226 126 C 160 154 58 148 -20 118 C -38 78 -44 34 -26 8 Z"
+                d="M -32 8 L 76 -18 C 148 -36 230 -18 306 22 L 378 60 L 322 112 C 264 166 156 162 70 134 L -24 104 Z"
                 fill="#14B85A"
               />
               <path
-                d="M 504 -22 C 564 22 632 -28 710 4 C 782 34 830 44 852 96 C 812 132 734 134 668 106 C 626 88 600 56 548 44 C 518 36 498 8 504 -22 Z"
+                d="M 484 -28 L 650 -10 L 854 46 L 842 114 L 708 126 C 634 132 570 98 516 56 Z"
                 fill="#F338C8"
               />
               <path
-                d="M 568 236 C 620 196 694 204 748 174 C 800 146 846 178 856 234 V 386 H 612 C 596 352 550 314 552 274 C 554 258 558 246 568 236 Z"
-                fill="#16A9D8"
-              />
-              <path
-                d="M 270 20 C 334 -12 434 4 506 34 C 572 62 622 88 690 82 C 666 116 606 136 536 126 C 476 118 424 86 360 98 C 296 110 238 100 214 72 C 220 46 242 30 270 20 Z"
+                d="M 212 42 C 276 -8 390 6 470 42 L 548 92 C 506 128 424 140 342 116 C 278 98 220 104 184 74 C 188 60 198 50 212 42 Z"
                 fill="#7AC943"
               />
               <path
-                d="M 10 252 C 76 218 144 262 202 276 C 252 288 292 340 354 314 C 332 354 256 374 178 362 C 104 352 28 338 -24 292 Z"
+                d="M -36 282 L 42 228 C 104 188 178 230 232 270 L 350 334 C 296 370 194 382 92 352 L -28 314 Z"
                 fill="#FFB000"
               />
               <path
-                d="M 360 316 C 418 280 502 286 560 300 C 620 314 670 338 742 302 C 724 342 650 366 560 366 C 488 366 422 338 350 354 Z"
+                d="M 348 328 C 378 260 494 246 610 286 L 754 340 L 706 384 H 408 Z"
                 fill="#8ACB3F"
-              />
-              <path
-                d="M 182 334 C 216 304 274 296 334 318 C 322 346 278 364 218 368 C 190 368 170 356 182 334 Z"
-                fill="#B98DEB"
-              />
-              <path
-                d="M 374 142 C 428 104 504 118 566 132 C 622 144 670 132 718 112 C 690 154 620 176 540 170 C 468 164 418 168 356 190 C 344 172 350 156 374 142 Z"
-                fill="#CDEB59"
               />
               <g className="hockney-summer-map-trees">
                 <path d="M 84 294 C 76 274 86 252 96 235 C 108 254 116 276 106 294 Z" fill="#007A5E" />
@@ -192,9 +194,9 @@ export default function WalkMap({
             filter={isHockney || isHockneySummer ? 'url(#hockneyWaterNoise)' : undefined}
           />
           <path
-            d="M 85 140 C 155 230 230 300 340 300 C 430 300 485 252 540 220 C 595 188 620 180 660 175 C 710 168 725 145 760 130"
+            d="M 82 195 C 132 278 232 318 340 300 C 430 300 485 252 540 220 C 595 188 620 180 660 175 C 678 170 690 164 705 160 C 742 150 765 142 792 138"
             fill="none"
-            stroke={isHockneySummer ? '#0057D9' : isHockney ? '#208E8D' : isSanctuary ? '#9A9B87' : '#8FA884'}
+            stroke={isHockneySummer ? '#F338C8' : isHockney ? '#208E8D' : isSanctuary ? '#9A9B87' : '#8FA884'}
             strokeDasharray={isHockneySummer ? '1 13' : isHockney ? '8 10' : '6 8'}
             strokeLinecap="round"
             strokeWidth={isHockneySummer ? '6' : '2'}
@@ -208,11 +210,12 @@ export default function WalkMap({
           </text>
 
           {bases.map((base, index) => {
-            const pos = getPosition(base.id, index);
+            const pos = getPosition(base, index);
             const active = selectedBaseId === base.id;
             const hovered = hoveredBaseId === base.id;
             const name = base.title.split(' 路 ')[1] || base.title;
             const palette = sanctuaryColorForBase(base.id);
+            const labelOffset = getLabelOffset(base);
 
             return (
               <g
@@ -305,8 +308,8 @@ export default function WalkMap({
                   {index + 1}
                 </text>
                 <text
-                  x={pos.x}
-                  y={pos.y - 28}
+                  x={pos.x + labelOffset.x}
+                  y={pos.y + labelOffset.y}
                   textAnchor="middle"
                   className="pointer-events-none text-sm font-medium"
                   style={isHockneySummer ? { fill: '#0057D9' } : isSanctuary ? { fill: palette.text } : { fill: '#4D6B50' }}

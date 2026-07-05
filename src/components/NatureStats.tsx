@@ -126,7 +126,8 @@ const SANCTUARY_BASE_COLORS: Record<string, string> = {
   'base-2': '#4E8B5B',
   'base-3': '#4B4E6D',
   'base-4': '#D98C3A',
-  'base-5': '#7A5C8C'
+  'base-5': '#7A5C8C',
+  'base-6': '#8A7A45'
 };
 
 type WordCloudWord = {
@@ -141,6 +142,16 @@ function randomRotation(index: number, maxDegrees = 5) {
   const seed = index * 137;
   const normalized = ((seed % 1000) / 1000) * 2 - 1;
   return normalized * maxDegrees;
+}
+
+function isDoubleTreeBenchBase(base: Base) {
+  return /06号基地|双树长椅|雙樹長椅/.test(base.title);
+}
+
+function sanctuaryBaseColorForBase(base: Base) {
+  if (SANCTUARY_BASE_COLORS[base.id]) return SANCTUARY_BASE_COLORS[base.id];
+  if (isDoubleTreeBenchBase(base)) return SANCTUARY_BASE_COLORS['base-6'];
+  return undefined;
 }
 
 export default function NatureStats({
@@ -176,7 +187,7 @@ export default function NatureStats({
     { label: '落叶松', terms: ['落叶松'] },
     { label: '河谷', terms: ['河谷'] },
     { label: '沙洲', terms: ['小沙洲', '沙洲'] },
-    { label: '长椅', terms: ['松林长椅', '长椅'] },
+    { label: '长椅', terms: ['双树长椅', '雙樹長椅', '松林长椅', '长椅'] },
     { label: '水文站', terms: ['水文站', '水文测报站'] },
     { label: '黑猫', terms: ['黑猫'] },
     { label: '毛毛虫', terms: ['悬丝毛毛虫', '绿色毛毛虫', '棕色毛毛虫', '毛毛虫'] },
@@ -189,11 +200,15 @@ export default function NatureStats({
     { label: '霞光', terms: ['霞光', '晚霞', '云霞'] }
   ];
 
+  const wordSources = [
+    ...logs.map((log) => `${log.content}\n${log.tags.join('\n')}`),
+    ...bases.map((base) => `${base.title}\n${base.subtitle}\n${base.description}\n${base.location}`)
+  ];
   const wordCounts: Record<string, number> = {};
   natureConcepts.forEach(({ label, terms }) => {
     let count = 0;
-    logs.forEach(log => {
-      let remainingContent = log.content;
+    wordSources.forEach((source) => {
+      let remainingContent = source;
       [...terms].sort((a, b) => b.length - a.length).forEach(term => {
         const regex = new RegExp(term, 'g');
         const matches = remainingContent.match(regex);
@@ -430,7 +445,7 @@ export default function NatureStats({
                   1,
                   Math.ceil((base.count / maxBaseCount) * FOOTSTEP_LEVELS)
                 );
-                const baseColor = SANCTUARY_BASE_COLORS[base.id];
+                const baseColor = sanctuaryBaseColorForBase(base);
 
                 return (
                   <div

@@ -56,6 +56,7 @@ const INTRO_STORAGE_KEY = 'hometown_opening_intro_seen';
 const ROADSIDE_LOCATION_ID = 'roadside-observations';
 const AUTHOR_USER_ID = import.meta.env.VITE_AUTHOR_USER_ID ?? '';
 const AUTHOR_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+const AUTHOR_LAST_ACTIVE_STORAGE_KEY = 'hometown_author_last_active_at';
 type Theme = 'default' | 'hockney' | 'hockneySummer' | 'sanctuary';
 type BasePalette = {
   accent: string;
@@ -69,6 +70,34 @@ type ActiveLogEditor =
 type ActiveBaseEditor =
   | { mode: 'create' }
   | { mode: 'edit'; baseId: string };
+
+function readAuthorLastActiveAt() {
+  try {
+    const savedValue = localStorage.getItem(AUTHOR_LAST_ACTIVE_STORAGE_KEY);
+    if (!savedValue) return null;
+
+    const timestamp = Number(savedValue);
+    return Number.isFinite(timestamp) ? timestamp : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeAuthorLastActiveAt(timestamp = Date.now()) {
+  try {
+    localStorage.setItem(AUTHOR_LAST_ACTIVE_STORAGE_KEY, String(timestamp));
+  } catch {
+    // If storage is unavailable, the in-memory timer still protects this tab.
+  }
+}
+
+function clearAuthorLastActiveAt() {
+  try {
+    localStorage.removeItem(AUTHOR_LAST_ACTIVE_STORAGE_KEY);
+  } catch {
+    // Ignore storage cleanup failures.
+  }
+}
 
 const THEME_VIEWPORT_BACKGROUNDS: Record<Theme, string> = {
   default: '#F5F4EC',
@@ -139,6 +168,12 @@ const SANCTUARY_PALETTES: Record<string, BasePalette> = {
     text: '#7A5C8C',
     shadow: 'rgba(122,92,140,0.13)'
   },
+  'base-6': {
+    accent: '#8A7A45',
+    soft: 'color-mix(in srgb, #8A7A45 12%, white)',
+    text: '#6F6238',
+    shadow: 'rgba(138,122,69,0.14)'
+  },
   [ROADSIDE_LOCATION_ID]: {
     accent: '#7A7F68',
     soft: '#ECEBDD',
@@ -147,8 +182,21 @@ const SANCTUARY_PALETTES: Record<string, BasePalette> = {
   }
 };
 
-function sanctuaryPaletteForBase(baseId?: string): BasePalette {
-  return SANCTUARY_PALETTES[baseId ?? ''] ?? SANCTUARY_PALETTES[ROADSIDE_LOCATION_ID];
+function isDoubleTreeBenchBase(base: Base) {
+  return /06号基地|双树长椅|雙樹長椅/.test(base.title);
+}
+
+function sanctuaryPaletteForBase(baseOrId?: Base | string | null): BasePalette {
+  if (typeof baseOrId === 'object' && baseOrId) {
+    if (SANCTUARY_PALETTES[baseOrId.id]) return SANCTUARY_PALETTES[baseOrId.id];
+    if (isDoubleTreeBenchBase(baseOrId)) return SANCTUARY_PALETTES['base-6'];
+  }
+
+  if (typeof baseOrId === 'string' && SANCTUARY_PALETTES[baseOrId]) {
+    return SANCTUARY_PALETTES[baseOrId];
+  }
+
+  return SANCTUARY_PALETTES[ROADSIDE_LOCATION_ID];
 }
 
 const THEME_OPTIONS: Array<{
@@ -174,11 +222,11 @@ const THEME_OPTIONS: Array<{
   },
   {
     id: 'sanctuary',
-    label: '五色秘境',
-    title: 'Five Sanctuary 五基地色谱',
+    label: '多彩秘境',
+    title: '多基地色谱皮肤',
     icon: (
       <span className="inline-flex items-center gap-0.5" aria-hidden="true">
-        {['#4BA3C3', '#4E8B5B', '#4B4E6D', '#D98C3A', '#7A5C8C'].map((color) => (
+        {['#4BA3C3', '#4E8B5B', '#4B4E6D', '#D98C3A', '#7A5C8C', '#8A7A45'].map((color) => (
           <span
             key={color}
             className="h-1.5 w-1.5 rounded-full"
@@ -187,7 +235,7 @@ const THEME_OPTIONS: Array<{
         ))}
       </span>
     ),
-    swatches: ['#4BA3C3', '#4E8B5B', '#4B4E6D', '#D98C3A', '#7A5C8C']
+    swatches: ['#4BA3C3', '#4E8B5B', '#4B4E6D', '#D98C3A', '#7A5C8C', '#8A7A45']
   },
   {
     id: 'hockneySummer',
@@ -342,6 +390,7 @@ export default function App() {
       return;
     }
 
+    clearAuthorLastActiveAt();
     setIsEditing(false);
     setActiveLogEditor(null);
     setActiveBaseEditor(null);
@@ -352,11 +401,56 @@ export default function App() {
   useEffect(() => {
     if (!isAuthor || !supabase) return;
 
-    let idleTimer = window.setTimeout(handleAuthorSignOut, AUTHOR_IDLE_TIMEOUT_MS);
-    const resetIdleTimer = () => {
-      window.clearTimeout(idleTimer);
-      idleTimer = window.setTimeout(handleAuthorSignOut, AUTHOR_IDLE_TIMEOUT_MS);
+    let idleTimer: number | undefined;
+    let isSigningOutForIdle = false;
+
+    const signOutForIdle = () => {
+      if (isSigningOutForIdle) return;
+      isSigningOutForIdle = true;
+      if (idleTimer) window.clearTimeout(idleTimer);
+      void handleAuthorSignOut();
     };
+
+    const scheduleIdleTimer = () => {
+      if (idleTimer) window.clearTimeout(idleTimer);
+
+      const lastActiveAt = readAuthorLastActiveAt();
+      const remainingTime = lastActiveAt
+        ? AUTHOR_IDLE_TIMEOUT_MS - (Date.now() - lastActiveAt)
+        : AUTHOR_IDLE_TIMEOUT_MS;
+
+      idleTimer = window.setTimeout(signOutForIdle, Math.max(0, remainingTime));
+    };
+
+    const signOutIfExpired = () => {
+      const lastActiveAt = readAuthorLastActiveAt();
+      if (!lastActiveAt) {
+        writeAuthorLastActiveAt();
+        return false;
+      }
+
+      if (Date.now() - lastActiveAt < AUTHOR_IDLE_TIMEOUT_MS) return false;
+
+      signOutForIdle();
+      return true;
+    };
+
+    const recordAuthorActivity = () => {
+      if (signOutIfExpired()) return;
+      writeAuthorLastActiveAt();
+      scheduleIdleTimer();
+    };
+
+    const checkAuthorIdleState = () => {
+      if (!signOutIfExpired()) scheduleIdleTimer();
+    };
+
+    if (!readAuthorLastActiveAt()) {
+      writeAuthorLastActiveAt();
+    }
+
+    checkAuthorIdleState();
+
     const activityEvents: Array<keyof WindowEventMap> = [
       'click',
       'keydown',
@@ -366,14 +460,20 @@ export default function App() {
     ];
 
     activityEvents.forEach((eventName) => {
-      window.addEventListener(eventName, resetIdleTimer, { passive: true });
+      window.addEventListener(eventName, recordAuthorActivity, { passive: true });
     });
+    window.addEventListener('focus', checkAuthorIdleState);
+    window.addEventListener('pageshow', checkAuthorIdleState);
+    document.addEventListener('visibilitychange', checkAuthorIdleState);
 
     return () => {
-      window.clearTimeout(idleTimer);
+      if (idleTimer) window.clearTimeout(idleTimer);
       activityEvents.forEach((eventName) => {
-        window.removeEventListener(eventName, resetIdleTimer);
+        window.removeEventListener(eventName, recordAuthorActivity);
       });
+      window.removeEventListener('focus', checkAuthorIdleState);
+      window.removeEventListener('pageshow', checkAuthorIdleState);
+      document.removeEventListener('visibilitychange', checkAuthorIdleState);
     };
   }, [handleAuthorSignOut, isAuthor]);
 
@@ -840,7 +940,7 @@ export default function App() {
                         }`}
                       >
                         <span className="flex shrink-0 items-center gap-[3px]" aria-hidden="true">
-                          {option.swatches.slice(0, option.id === 'sanctuary' || option.id === 'hockneySummer' ? 5 : 3).map((color) => (
+                          {option.swatches.slice(0, option.id === 'hockneySummer' ? 5 : option.swatches.length).map((color) => (
                             <span
                               key={color}
                               className="h-1.5 w-1.5 rounded-full ring-1 ring-inset ring-black/5"
@@ -1016,7 +1116,7 @@ export default function App() {
                     isHockney={isHockney}
                     isHockneySummer={isHockneySummer}
                     isSanctuary={isSanctuary}
-                    palette={sanctuaryPaletteForBase(base.id)}
+                    palette={sanctuaryPaletteForBase(base)}
                   />
                 ))}
                 <BaseNoteCard
@@ -1026,7 +1126,7 @@ export default function App() {
                   isHockney={isHockney}
                   isHockneySummer={isHockneySummer}
                   isSanctuary={isSanctuary}
-                  palette={sanctuaryPaletteForBase(ROADSIDE_LOCATION_ID)}
+                  palette={sanctuaryPaletteForBase(ROADSIDE_LOCATION)}
                 />
               </div>
             </section>
@@ -1056,7 +1156,7 @@ export default function App() {
             isHockney={isHockney}
             isHockneySummer={isHockneySummer}
             isSanctuary={isSanctuary}
-            palette={sanctuaryPaletteForBase(activeBaseDetails.id)}
+            palette={sanctuaryPaletteForBase(activeBaseDetails)}
           />
         )}
 
@@ -1169,7 +1269,7 @@ export default function App() {
                     isHockney={isHockney}
                     isHockneySummer={isHockneySummer}
                     isSanctuary={isSanctuary}
-                    palette={sanctuaryPaletteForBase(log.baseId)}
+                    palette={sanctuaryPaletteForBase(base ?? log.baseId)}
                     onOpenBase={() => {
                       setSelectedBaseId(log.baseId);
                       setActiveTab('bases');
@@ -1696,12 +1796,12 @@ const BaseNoteCard: React.FC<{
       {isSanctuary && (
         <span
           aria-hidden="true"
-          className="sanctuary-card-strip block h-2.5 w-full"
+          className="sanctuary-card-strip block h-3 w-full"
         />
       )}
       <span
         className={`block h-40 w-full flex-none ${
-          isHockneySummer ? 'hockney-summer-note-image' : isHockney ? 'hockney-image-frame' : isSanctuary ? 'sanctuary-image-frame' : ''
+          isHockneySummer ? 'hockney-summer-note-image' : isHockney ? 'hockney-image-frame hockney-note-image-frame' : isSanctuary ? 'sanctuary-image-frame' : ''
         }`}
       >
         <img

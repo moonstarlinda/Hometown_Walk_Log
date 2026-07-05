@@ -199,6 +199,10 @@ header.sticky {
   border-radius: 24px;
 }
 
+.hockney-note-image-frame {
+  border-radius: 18px 18px 0 0;
+}
+
 .hockney-image-frame::after {
   content: "";
   position: absolute;
@@ -458,7 +462,7 @@ header.sticky {
   font-weight: 900;
 }
 
-.hockney-summer-map-blocks path {
+.hockney-summer-map-blocks > path {
   opacity: 0.2;
   filter: blur(1.2px);
   transform-box: fill-box;
@@ -466,21 +470,29 @@ header.sticky {
   mix-blend-mode: multiply;
 }
 
-.hockney-summer-map-blocks path:nth-child(n + 4) {
+.hockney-summer-map-blocks > path:nth-child(n + 4) {
   opacity: 0.26;
   filter: blur(0.8px);
 }
 
-.hockney-summer-map-blocks path:nth-child(1) {
+.hockney-summer-map-blocks > path:nth-child(1) {
   fill: #14b85a;
 }
 
-.hockney-summer-map-blocks path:nth-child(2) {
+.hockney-summer-map-blocks > path:nth-child(2) {
   fill: #f338c8;
 }
 
-.hockney-summer-map-blocks path:nth-child(3) {
-  fill: #16a9d8;
+.hockney-summer-map-blocks > path:nth-child(3) {
+  fill: #7ac943;
+}
+
+.hockney-summer-map-blocks > path:nth-child(4) {
+  fill: #ffb000;
+}
+
+.hockney-summer-map-blocks > path:nth-child(5) {
+  fill: #8acb3f;
 }
 
 .hockney-summer-map-trees path {
@@ -1113,7 +1125,8 @@ g:hover .hockney-summer-map-marker {
     radial-gradient(circle at 32% 9%, rgba(78, 139, 91, 0.22), transparent 23%),
     radial-gradient(circle at 55% 14%, rgba(75, 78, 109, 0.16), transparent 25%),
     radial-gradient(circle at 78% 12%, rgba(217, 140, 58, 0.18), transparent 24%),
-    radial-gradient(circle at 94% 22%, rgba(122, 92, 140, 0.2), transparent 26%),
+    radial-gradient(circle at 92% 19%, rgba(122, 92, 140, 0.18), transparent 24%),
+    radial-gradient(circle at 72% 84%, rgba(138, 122, 69, 0.16), transparent 26%),
     radial-gradient(circle at 50% 88%, rgba(75, 163, 195, 0.14), transparent 30%);
   filter: blur(42px);
 }
@@ -1157,11 +1170,12 @@ g:hover .hockney-summer-map-marker {
   height: 2px;
   background: linear-gradient(
     90deg,
-    #4ba3c3 0 20%,
-    #4e8b5b 20% 40%,
-    #4b4e6d 40% 60%,
-    #d98c3a 60% 80%,
-    #7a5c8c 80% 100%
+    #4ba3c3 0 16.666%,
+    #4e8b5b 16.666% 33.333%,
+    #4b4e6d 33.333% 50%,
+    #d98c3a 50% 66.666%,
+    #7a5c8c 66.666% 83.333%,
+    #8a7a45 83.333% 100%
   );
   opacity: 0.72;
 }
@@ -1258,15 +1272,16 @@ g:hover .hockney-summer-map-marker {
 
 .sanctuary-card-strip {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.38), transparent 58%),
     linear-gradient(
       90deg,
-      color-mix(in srgb, var(--sanctuary-accent, #8f8066) 42%, white),
-      color-mix(in srgb, var(--sanctuary-accent, #8f8066) 66%, white) 42%,
-      color-mix(in srgb, var(--sanctuary-accent, #8f8066) 38%, white)
+      color-mix(in srgb, var(--sanctuary-accent, #8f8066) 88%, #f8f2df),
+      var(--sanctuary-accent, #8f8066) 48%,
+      color-mix(in srgb, var(--sanctuary-accent, #8f8066) 76%, #f8f2df)
     );
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.52) inset;
-  opacity: 0.88;
+  box-shadow:
+    0 1px 0 rgba(82, 70, 45, 0.12) inset,
+    0 -1px 0 color-mix(in srgb, var(--sanctuary-accent, #8f8066) 28%, transparent) inset;
+  opacity: 1;
 }
 
 .sanctuary-image-frame {
@@ -1291,12 +1306,13 @@ g:hover .hockney-summer-map-marker {
     radial-gradient(circle at 36% 34%, rgba(78, 139, 91, 0.17), transparent 24%),
     radial-gradient(circle at 54% 34%, rgba(75, 78, 109, 0.12), transparent 23%),
     radial-gradient(circle at 70% 42%, rgba(217, 140, 58, 0.14), transparent 24%),
-    radial-gradient(circle at 86% 34%, rgba(122, 92, 140, 0.15), transparent 25%),
+    radial-gradient(circle at 84% 34%, rgba(122, 92, 140, 0.14), transparent 24%),
+    radial-gradient(circle at 92% 56%, rgba(138, 122, 69, 0.13), transparent 24%),
     linear-gradient(180deg, rgba(255, 253, 246, 0.88), rgba(246, 242, 229, 0.92)),
     radial-gradient(circle, rgba(89, 82, 67, 0.1) 0 0.45px, transparent 0.65px),
     #fbf8ee;
-  background-blend-mode: multiply, multiply, multiply, multiply, multiply, normal, normal, normal;
-  background-size: auto, auto, auto, auto, auto, auto, 12px 12px, auto;
+  background-blend-mode: multiply, multiply, multiply, multiply, multiply, multiply, normal, normal, normal;
+  background-size: auto, auto, auto, auto, auto, auto, auto, 12px 12px, auto;
 }
 
 .sanctuary-calendar-card {
@@ -1308,9 +1324,10 @@ g:hover .hockney-summer-map-marker {
     radial-gradient(circle at 34% 10%, rgba(78, 139, 91, 0.1), transparent 24%),
     radial-gradient(circle at 55% 16%, rgba(75, 78, 109, 0.08), transparent 25%),
     radial-gradient(circle at 75% 12%, rgba(217, 140, 58, 0.09), transparent 24%),
-    radial-gradient(circle at 92% 20%, rgba(122, 92, 140, 0.1), transparent 25%),
+    radial-gradient(circle at 90% 20%, rgba(122, 92, 140, 0.09), transparent 24%),
+    radial-gradient(circle at 78% 84%, rgba(138, 122, 69, 0.09), transparent 26%),
     rgba(255, 253, 246, 0.9);
-  background-blend-mode: multiply, multiply, multiply, multiply, multiply, normal;
+  background-blend-mode: multiply, multiply, multiply, multiply, multiply, multiply, normal;
 }
 
 .sanctuary-map-card::after,
