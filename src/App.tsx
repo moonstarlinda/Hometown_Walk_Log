@@ -15,6 +15,7 @@ import {
   CloudRain,
   Compass,
   Filter,
+  Leaf,
   LogIn,
   LogOut,
   Map as MapIcon,
@@ -37,6 +38,7 @@ import { Base, WalkLog } from './types';
 import AddBaseModal from './components/AddBaseModal';
 import AddLogModal from './components/AddLogModal';
 import NatureStats from './components/NatureStats';
+import PlantAtlas from './components/PlantAtlas';
 import WalkMap from './components/WalkMap';
 import openingWalkingIntoForest from './assets/images/opening_walking_into_the_forest.jpeg';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
@@ -328,7 +330,7 @@ export default function App() {
   const [bases, setBases] = useState<Base[]>([]);
   const [logs, setLogs] = useState<WalkLog[]>([]);
   const [selectedBaseId, setSelectedBaseId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'bases' | 'timeline' | 'stats'>('bases');
+  const [activeTab, setActiveTab] = useState<'bases' | 'timeline' | 'stats' | 'plants'>('bases');
   const [activeLogEditor, setActiveLogEditor] = useState<ActiveLogEditor | null>(null);
   const [activeBaseEditor, setActiveBaseEditor] = useState<ActiveBaseEditor | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -814,7 +816,7 @@ export default function App() {
   };
 
   const showHome = activeTab === 'bases' && !selectedBaseId;
-  const showBackToTopControl = activeTab === 'timeline' || Boolean(activeBaseDetails);
+  const showBackToTopControl = activeTab === 'timeline' || activeTab === 'plants' || Boolean(activeBaseDetails);
 
   useEffect(() => {
     if (!showBackToTopControl) {
@@ -1006,6 +1008,15 @@ export default function App() {
               onClick={() => {
                 setSelectedBaseId(null);
                 setActiveTab('timeline');
+              }}
+            />
+            <TabButton
+              active={activeTab === 'plants'}
+              icon={<Leaf className="h-4 w-4" />}
+              label="图鉴"
+              onClick={() => {
+                setSelectedBaseId(null);
+                setActiveTab('plants');
               }}
             />
             <TabButton
@@ -1292,6 +1303,10 @@ export default function App() {
 
         {activeTab === 'stats' && (
           <NatureStats logs={logs} bases={bases} isHockney={isHockney} isHockneySummer={isHockneySummer} isSanctuary={isSanctuary} />
+        )}
+
+        {activeTab === 'plants' && (
+          <PlantAtlas isHockney={isHockney} isHockneySummer={isHockneySummer} isSanctuary={isSanctuary} />
         )}
       </main>
 
@@ -1879,7 +1894,7 @@ const BaseDetailCover: React.FC<{
   return (
     <figure
       className={`h-44 w-full self-start overflow-hidden bg-[#F4F7ED] md:h-64 md:max-h-64 ${
-        isHockneySummer ? 'hockney-summer-detail-image' : isHockney ? 'hockney-image-frame' : isSanctuary ? 'sanctuary-image-frame' : ''
+        isHockneySummer ? 'hockney-summer-detail-image' : isHockney ? 'hockney-image-frame hockney-detail-image-frame' : isSanctuary ? 'sanctuary-image-frame' : ''
       }`}
     >
       <img

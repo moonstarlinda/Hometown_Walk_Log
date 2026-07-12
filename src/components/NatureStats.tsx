@@ -5,6 +5,7 @@
 
 import { WalkLog, Base } from '../types';
 import { Calendar, CloudSun, Footprints, Heart, Leaf, Route } from 'lucide-react';
+import { PLANTS } from './PlantAtlas';
 
 interface NatureStatsProps {
   logs: WalkLog[];
@@ -179,31 +180,46 @@ export default function NatureStats({
     }
   });
 
-  const natureConcepts = [
+  const baseNatureConcepts = [
     { label: '鸭子', terms: ['绿头鸭', '小鸭子', '鸭子', '鸭'] },
-    { label: '松树', terms: ['落叶松', '樟子松', '松树', '松林', '松涛', '松枝', '松'] },
     { label: '鸢尾花', terms: ['紫色鸢尾花', '野鸢尾', '鸢尾花', '鸢尾'] },
     { label: '丁香花', terms: ['丁香花', '丁香'] },
-    { label: '落叶松', terms: ['落叶松'] },
-    { label: '河谷', terms: ['河谷'] },
     { label: '沙洲', terms: ['小沙洲', '沙洲'] },
     { label: '长椅', terms: ['双树长椅', '雙樹長椅', '松林长椅', '长椅'] },
     { label: '水文站', terms: ['水文站', '水文测报站'] },
     { label: '黑猫', terms: ['黑猫'] },
     { label: '毛毛虫', terms: ['悬丝毛毛虫', '绿色毛毛虫', '棕色毛毛虫', '毛毛虫'] },
     { label: '石头', terms: ['玉色石头', '白色石头', '小石头', '石子', '石头'] },
-    { label: '云层', terms: ['三层云', '云分层', '烟缕云', '云层', '白云', '乌云'] },
-    { label: '河水', terms: ['河水', '水流', '水面'] },
+    { label: '云层', terms: ['云分两层', '三层云', '云分层', '烟缕云', '云结构', '云层', '薄云', '白云', '乌云'] },
+    { label: '河水', terms: ['河水清澈', '水清澈', '安静看水', '玩水', '河水', '水流', '水面', '水浑'] },
     { label: '钓鱼人', terms: ['钓鱼人'] },
     { label: '帐篷', terms: ['白色帐篷', '彩色帐篷', '帐篷'] },
-    { label: '薄云', terms: ['薄云'] },
-    { label: '霞光', terms: ['霞光', '晚霞', '云霞'] }
+    { label: '霞光', terms: ['霞光', '晚霞', '云霞', '黄昏'] },
+    { label: '森林', terms: ['林荫小路', '穿林打叶声', '森林海洋', '森林分层', '森林', '松林', '林中'] },
+    { label: '野餐', terms: ['野餐'] },
+    { label: '风', terms: ['风向变化', '风向东向西', '风大', '大风', '有风'] },
+    { label: '小鸟', terms: ['小鸟画弧', '小鸟'] },
+    ...PLANTS.map((plant) => ({ label: plant.name, terms: [plant.name] }))
   ];
 
-  const wordSources = [
-    ...logs.map((log) => `${log.content}\n${log.tags.join('\n')}`),
-    ...bases.map((base) => `${base.title}\n${base.subtitle}\n${base.description}\n${base.location}`)
-  ];
+  const knownNatureTerms = baseNatureConcepts.flatMap(({ terms }) => terms);
+  const naturalTagPattern = /河|水|云|雨|风|树|林|花|草|叶|果|鸟|鸭|猫|虫|石|沙|洲|霞|山|天|雾|雪|光/;
+  const discoveredTagConcepts = Array.from(
+    new Set(
+      logs
+        .flatMap((log) => log.tags)
+        .map((tag) => tag.trim())
+        .filter((tag) =>
+          tag.length >= 2 &&
+          tag.length <= 9 &&
+          naturalTagPattern.test(tag) &&
+          !knownNatureTerms.some((term) => tag.includes(term))
+        )
+    )
+  ).map((tag) => ({ label: tag, terms: [tag] }));
+  const natureConcepts = [...baseNatureConcepts, ...discoveredTagConcepts];
+
+  const wordSources = logs.map((log) => `${log.content}\n${log.tags.join('\n')}`);
   const wordCounts: Record<string, number> = {};
   natureConcepts.forEach(({ label, terms }) => {
     let count = 0;
@@ -228,10 +244,8 @@ export default function NatureStats({
   const eligibleWords = sortedWords.filter(
     ([word]) => word.length >= 2 && wordWhitelist.has(word)
   );
-  const coreWord = wordCounts['河水']
-    ? ([['河水', wordCounts['河水']]] as Array<[string, number]>)
-    : [];
-  const surroundingWords = eligibleWords.filter(([word]) => word !== '河水');
+  const coreWord = eligibleWords.slice(0, 1);
+  const surroundingWords = eligibleWords.slice(1);
   const importantWords = surroundingWords.slice(0, 5);
   const secondaryWords = surroundingWords.slice(5, 11);
   const wordCloudWords: WordCloudWord[] = [
@@ -255,7 +269,7 @@ export default function NatureStats({
       ...SECONDARY_WORD_POSITIONS[index]
     }))
   ].slice(0, 12);
-  const maxWordCount = Math.max(wordCounts['河水'] ?? 1, wordCloudWords[0]?.count ?? 1);
+  const maxWordCount = Math.max(wordCloudWords[0]?.count ?? 1, 1);
 
   const weatherLabels: Record<string, { label: string; color: string }> = {
     sunny: { label: '晴天', color: '#d97706' },
@@ -289,8 +303,9 @@ export default function NatureStats({
   const endDate = new Date(2026, 11, 31);
   const startOffset = startDate.getDay();
   const calendarStart = new Date(startDate.getTime() - startOffset * DAY_MS);
+  const calendarDayCount = Math.ceil((endDate.getTime() - calendarStart.getTime() + DAY_MS) / DAY_MS / 7) * 7;
 
-  const calendarDays = Array.from({ length: 371 }, (_, index) => {
+  const calendarDays = Array.from({ length: calendarDayCount }, (_, index) => {
     const date = new Date(calendarStart.getTime() + index * DAY_MS);
     const key = formatDateKey(date);
     const inRange = date >= startDate && date <= endDate;
@@ -309,6 +324,7 @@ export default function NatureStats({
       label: monthLabel(day.date.getMonth()),
       column: Math.floor(calendarDays.findIndex((item) => item.key === day.key) / 7) + 1
     }));
+  const calendarWeekCount = calendarDays.length / 7;
 
   // Calculate base statistics
   const logsPerBase = bases.map(base => ({
@@ -340,43 +356,46 @@ export default function NatureStats({
           </p>
         </div>
 
-        <div className="mr-4 overflow-hidden">
-          <div className="mb-2 grid grid-cols-[40px_repeat(53,22px)] gap-1 text-xs text-[#7D8C74]">
-            <span />
-            {monthMarkers.map((marker) => (
-              <span
-                key={marker.key}
-                className="whitespace-nowrap"
-                style={{ gridColumn: `${marker.column + 1} / span 4` }}
-              >
-                {marker.label}
-              </span>
-            ))}
-          </div>
-          <div className="grid grid-cols-[40px_repeat(53,22px)] grid-rows-7 gap-1">
-            <span className="row-start-2 text-xs text-[#7D8C74]">一</span>
-            <span className="row-start-4 text-xs text-[#7D8C74]">三</span>
-            <span className="row-start-6 text-xs text-[#7D8C74]">五</span>
-            {calendarDays.map((day, index) => (
-              <div
-                key={day.key}
-                title={`${day.key}: ${day.count} 篇日志`}
-                className={`flex items-center justify-center ${day.inRange ? '' : 'opacity-0'}`}
-                style={{
-                  gridColumn: Math.floor(index / 7) + 2,
-                  gridRow: (index % 7) + 1
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 14 14" className="overflow-visible">
-                  <path
-                    d="M7 1 L9 3 L8 3 L10 5 L9 5 L11 7 L3 7 L5 5 L4 5 L6 3 L5 3 Z M6 7 L6 10 L8 10 L8 7"
-                    fill={day.count === 0 ? '#EEF1EA' : day.count === 1 ? '#CFE6C8' : day.count === 2 ? '#92C68D' : '#2F7A4F'}
-                    stroke={day.count === 0 ? '#E1E7DC' : day.count === 1 ? '#BBDAB3' : day.count === 2 ? '#7FB775' : '#2F6C49'}
-                    strokeWidth="0.5"
-                  />
-                </svg>
-              </div>
-            ))}
+        <div>
+          <div className="calendar-heatmap-scroll overflow-x-auto overscroll-x-contain pb-2">
+            <svg
+              viewBox="0 0 1100 215"
+              preserveAspectRatio="none"
+              className="block h-[215px] w-full min-w-[960px]"
+              role="img"
+              aria-label="2026年散步日志热力图"
+            >
+              {monthMarkers.map((marker) => {
+                const x = 42 + (marker.column - 1) * (1050 / calendarWeekCount);
+                return (
+                  <text key={marker.key} x={x} y="15" fill="#7D8C74" fontSize="12">
+                    {marker.label}
+                  </text>
+                );
+              })}
+              <text x="0" y="62" fill="#7D8C74" fontSize="12">一</text>
+              <text x="0" y="117" fill="#7D8C74" fontSize="12">三</text>
+              <text x="0" y="172" fill="#7D8C74" fontSize="12">五</text>
+              {calendarDays.map((day, index) => {
+                if (!day.inRange) return null;
+                const column = Math.floor(index / 7);
+                const row = index % 7;
+                const x = 42 + column * (1050 / calendarWeekCount) - 7;
+                const y = 30 + row * 27.5;
+                return (
+                  <g key={day.key} transform={`translate(${x} ${y})`}>
+                    <title>{`${day.key}: ${day.count} 篇日志`}</title>
+                    <path
+                      d="M7 1 L9 3 L8 3 L10 5 L9 5 L11 7 L3 7 L5 5 L4 5 L6 3 L5 3 Z M6 7 L6 10 L8 10 L8 7"
+                      transform="translate(-3.5 -2.5) scale(1.5)"
+                      fill={day.count === 0 ? '#EEF1EA' : day.count === 1 ? '#CFE6C8' : day.count === 2 ? '#92C68D' : '#2F7A4F'}
+                      stroke={day.count === 0 ? '#E1E7DC' : day.count === 1 ? '#BBDAB3' : day.count === 2 ? '#7FB775' : '#2F6C49'}
+                      strokeWidth="0.5"
+                    />
+                  </g>
+                );
+              })}
+            </svg>
           </div>
           <div className="mt-3 flex items-center justify-center gap-2 text-xs text-[#7D8C74]">
             <span>少</span>
@@ -397,7 +416,7 @@ export default function NatureStats({
 
       {/* 底部：双列布局 */}
       <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2">
-        {/* 左侧列：散步日志纵览 */}
+        {/* 左侧列：散步纵览 */}
         <section
         className={`flex h-full flex-col rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
             isHockneySummer
@@ -413,10 +432,10 @@ export default function NatureStats({
             <span className={`rounded-md p-1 ${isHockneySummer ? 'hockney-summer-heading-icon' : isSanctuary ? 'bg-[color-mix(in_srgb,#4E8B5B_12%,white)] text-[#4E8B5B]' : 'bg-[#EEF4E8] text-[#2F5D4A]'}`}>
               <Route className="h-4 w-4" />
             </span>
-            散步日志纵览
+            散步纵览
           </h3>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className={`rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] p-3 ${isHockneySummer ? 'hockney-summer-metric' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
               <p className="font-mono text-[10px] text-[#7D8C74]">BASES</p>
               <p className="mt-1 font-serif text-2xl font-semibold text-[#243C32]">
@@ -431,6 +450,14 @@ export default function NatureStats({
                 {totalLogs} 篇
               </p>
               <p className="mt-1 text-xs text-[#6B7E65]">观察日志</p>
+            </div>
+
+            <div className={`rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] p-3 ${isHockneySummer ? 'hockney-summer-metric' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
+              <p className="font-mono text-[10px] text-[#7D8C74]">PLANTS</p>
+              <p className="mt-1 font-serif text-2xl font-semibold text-[#243C32]">
+                {PLANTS.length} 种
+              </p>
+              <p className="mt-1 text-xs text-[#6B7E65]">植物收录</p>
             </div>
           </div>
 
@@ -500,6 +527,7 @@ export default function NatureStats({
               )}
             </div>
           </div>
+
         </section>
 
         {/* 右侧列：自然意象 */}
@@ -514,12 +542,15 @@ export default function NatureStats({
                 : ''
           }`}
         >
-          <h3 className="mb-4 flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
-            <span className={`rounded-md p-1 ${isHockneySummer ? 'hockney-summer-heading-icon' : isSanctuary ? 'bg-[color-mix(in_srgb,#7A5C8C_12%,white)] text-[#7A5C8C]' : 'bg-[#F4F0E3] text-[#7A693A]'}`}>
-              <Leaf className="h-4 w-4" />
-            </span>
-            自然意象
-          </h3>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
+              <span className={`rounded-md p-1 ${isHockneySummer ? 'hockney-summer-heading-icon' : isSanctuary ? 'bg-[color-mix(in_srgb,#7A5C8C_12%,white)] text-[#7A5C8C]' : 'bg-[#F4F0E3] text-[#7A693A]'}`}>
+                <Leaf className="h-4 w-4" />
+              </span>
+              自然意象
+            </h3>
+            <span className="text-[11px] text-[#879181]">基于当前 {totalLogs} 篇日志</span>
+          </div>
 
           <div
             className={`relative min-h-[14.5rem] flex-1 overflow-hidden rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] ${

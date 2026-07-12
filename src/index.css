@@ -60,6 +60,16 @@ textarea {
   margin: 0;
 }
 
+@media (min-width: 640px) {
+  .calendar-heatmap-scroll {
+    overflow-x: hidden;
+  }
+
+  .calendar-heatmap-scroll svg {
+    min-width: 100%;
+  }
+}
+
 @supports (-webkit-touch-callout: none) {
   html,
   body,
@@ -201,6 +211,17 @@ header.sticky {
 
 .hockney-note-image-frame {
   border-radius: 18px 18px 0 0;
+}
+
+/* The base-detail cover is joined to its card rather than floating inside it. */
+.hockney-detail-image-frame {
+  border-radius: 17px 17px 0 0;
+}
+
+@media (min-width: 768px) {
+  .hockney-detail-image-frame {
+    border-radius: 17px 0 0 17px;
+  }
 }
 
 .hockney-image-frame::after {
