@@ -24,6 +24,374 @@ textarea {
   max-width: 100%;
 }
 
+.plant-flip-wall {
+  perspective: 900px;
+}
+
+.plant-flip-tile {
+  transform-origin: center;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.plant-flip-image {
+  transform: scale(1.015);
+  filter: brightness(0.82) saturate(0.72) contrast(0.94) blur(0.6px);
+  transition: filter 420ms ease, transform 500ms ease;
+}
+
+.plant-flip-tile:hover .plant-flip-image,
+.plant-flip-tile:focus-visible .plant-flip-image {
+  transform: scale(1.05);
+  filter: brightness(0.92) saturate(0.9) contrast(0.98) blur(0.2px);
+}
+
+.plant-window-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border: 1px solid rgba(45, 70, 55, 0.14);
+  border-radius: inherit;
+  box-shadow:
+    inset 0 8px 18px rgba(30, 50, 38, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  transition: border-color 320ms ease, box-shadow 320ms ease;
+}
+
+.plant-window-image {
+  transform: scale(1.01);
+  filter: brightness(0.9) saturate(0.85);
+  transition: filter 420ms ease, transform 500ms ease;
+}
+
+.plant-window-card:hover .plant-window-image,
+.plant-window-card:focus-visible .plant-window-image {
+  transform: scale(1.035);
+  filter: brightness(0.98) saturate(0.98);
+}
+
+.plant-window-card:hover .plant-window-frame::after,
+.plant-window-card:focus-visible .plant-window-frame::after {
+  border-color: rgba(45, 70, 55, 0.24);
+  box-shadow:
+    inset 0 6px 15px rgba(30, 50, 38, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+}
+
+.default-plant-atlas .plant-window-card {
+  border-color: #cbd8c5;
+  background: #faf8ef;
+  box-shadow:
+    0 8px 22px rgba(47, 93, 74, 0.09),
+    0 1px 2px rgba(36, 60, 50, 0.06);
+}
+
+.default-plant-atlas .plant-window-card:hover,
+.default-plant-atlas .plant-window-card:focus-visible {
+  border-color: #b7c9b0;
+  box-shadow:
+    0 12px 28px rgba(47, 93, 74, 0.14),
+    0 2px 4px rgba(36, 60, 50, 0.08);
+}
+
+.sanctuary-plant-atlas {
+  --plant-tree: #4e8b5b;
+  --plant-shrub: #d98c3a;
+  --plant-herb: #7a5c8c;
+  --plant-vine: #4ba3c3;
+}
+
+.sanctuary-plant-atlas .plant-atlas-hero {
+  position: relative;
+  border-color: rgba(122, 92, 140, 0.24);
+  background:
+    radial-gradient(circle at 78% 18%, rgba(75, 163, 195, 0.1), transparent 28%),
+    radial-gradient(circle at 18% 84%, rgba(217, 140, 58, 0.09), transparent 30%),
+    #fffaf0;
+  box-shadow: 0 12px 32px rgba(75, 78, 109, 0.09);
+}
+
+.sanctuary-plant-atlas .plant-atlas-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  height: 5px;
+  background: linear-gradient(90deg, var(--plant-tree) 0 25%, var(--plant-shrub) 25% 50%, var(--plant-herb) 50% 75%, var(--plant-vine) 75% 100%);
+}
+
+.sanctuary-plant-atlas .plant-atlas-kicker {
+  border-color: rgba(122, 92, 140, 0.28);
+  background: color-mix(in srgb, var(--plant-herb) 9%, white);
+  color: var(--plant-herb);
+}
+
+.sanctuary-plant-atlas .plant-flip-tile {
+  border: 2px solid var(--plant-tree);
+  box-shadow: 3px 3px 0 rgba(78, 139, 91, 0.2);
+}
+
+.sanctuary-plant-atlas .plant-flip-tile:nth-child(2) {
+  border-color: var(--plant-shrub);
+  box-shadow: 3px 3px 0 rgba(217, 140, 58, 0.2);
+}
+
+.sanctuary-plant-atlas .plant-flip-tile:nth-child(3) {
+  border-color: var(--plant-herb);
+  box-shadow: 3px 3px 0 rgba(122, 92, 140, 0.2);
+}
+
+.sanctuary-plant-atlas .plant-flip-tile:nth-child(4) {
+  border-color: var(--plant-vine);
+  box-shadow: 3px 3px 0 rgba(75, 163, 195, 0.2);
+}
+
+.sanctuary-plant-atlas .plant-filter-button {
+  border-color: color-mix(in srgb, var(--filter-accent, var(--plant-tree)) 28%, white);
+  background: color-mix(in srgb, var(--filter-accent, var(--plant-tree)) 7%, white);
+  color: var(--filter-accent, var(--plant-tree));
+}
+
+.sanctuary-plant-atlas .plant-filter-button[data-filter="shrub"] { --filter-accent: var(--plant-shrub); }
+.sanctuary-plant-atlas .plant-filter-button[data-filter="herb"] { --filter-accent: var(--plant-herb); }
+.sanctuary-plant-atlas .plant-filter-button[data-filter="vine"] { --filter-accent: var(--plant-vine); }
+
+.sanctuary-plant-atlas .plant-filter-button[aria-pressed="true"] {
+  border-color: var(--filter-accent, var(--plant-tree));
+  background: var(--filter-accent, var(--plant-tree));
+  color: #ffffff;
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--filter-accent, var(--plant-tree)) 28%, transparent);
+}
+
+.sanctuary-plant-atlas .plant-window-card {
+  --plant-card-accent: var(--plant-tree);
+  border-color: color-mix(in srgb, var(--plant-card-accent) 28%, white);
+  border-top: 4px solid var(--plant-card-accent);
+  background: color-mix(in srgb, var(--plant-card-accent) 3%, #fffaf0);
+  box-shadow: 0 9px 24px color-mix(in srgb, var(--plant-card-accent) 12%, transparent);
+}
+
+.sanctuary-plant-atlas .plant-window-card[data-category="shrub"] { --plant-card-accent: var(--plant-shrub); }
+.sanctuary-plant-atlas .plant-window-card[data-category="herb"] { --plant-card-accent: var(--plant-herb); }
+.sanctuary-plant-atlas .plant-window-card[data-category="vine"] { --plant-card-accent: var(--plant-vine); }
+
+.sanctuary-plant-atlas .plant-window-card > div:last-child > span,
+.sanctuary-plant-atlas .plant-window-card h2 {
+  color: var(--plant-card-accent);
+}
+
+.sanctuary-plant-atlas .plant-window-card:hover,
+.sanctuary-plant-atlas .plant-window-card:focus-visible {
+  border-color: var(--plant-card-accent);
+  box-shadow: 0 13px 30px color-mix(in srgb, var(--plant-card-accent) 19%, transparent);
+}
+
+.hockney-plant-overlay {
+  background: rgba(10, 82, 108, 0.42);
+}
+
+.hockney-plant-modal {
+  border: 1px solid rgba(31, 156, 193, 0.44);
+  background: #e8faff;
+  box-shadow: 0 24px 70px rgba(12, 91, 122, 0.28);
+}
+
+.hockney-plant-modal .plant-detail-info {
+  background: linear-gradient(150deg, rgba(232, 250, 255, 0.98), rgba(226, 255, 239, 0.94));
+}
+
+.hockney-plant-modal .plant-detail-kicker,
+.hockney-plant-modal .plant-detail-date,
+.hockney-plant-modal .plant-detail-disclaimer {
+  color: #397f91;
+}
+
+.hockney-plant-modal .plant-detail-title {
+  color: #075f80;
+}
+
+.hockney-plant-modal .plant-detail-tag {
+  background: #c9f1e5;
+  color: #176f73;
+}
+
+.hockney-plant-modal .plant-detail-dates {
+  border-color: rgba(31, 156, 193, 0.28);
+}
+
+.hockney-plant-modal .plant-detail-close {
+  border-color: rgba(31, 156, 193, 0.42);
+  background: #e8faff;
+  color: #137fbe;
+}
+
+.sanctuary-plant-overlay {
+  background: rgba(45, 42, 57, 0.46);
+}
+
+.sanctuary-plant-modal {
+  --plant-detail-accent: #4e8b5b;
+  border: 1px solid color-mix(in srgb, var(--plant-detail-accent) 35%, white);
+  background: #fff9ec;
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--plant-detail-accent) 24%, transparent);
+}
+
+.sanctuary-plant-modal[data-category="shrub"] { --plant-detail-accent: #d98c3a; }
+.sanctuary-plant-modal[data-category="herb"] { --plant-detail-accent: #7a5c8c; }
+.sanctuary-plant-modal[data-category="vine"] { --plant-detail-accent: #4ba3c3; }
+
+.sanctuary-plant-modal .plant-detail-info {
+  background: linear-gradient(145deg, #fff9ec, #f4f0e8);
+}
+
+.sanctuary-plant-modal .plant-detail-kicker,
+.sanctuary-plant-modal .plant-detail-title {
+  color: var(--plant-detail-accent);
+}
+
+.sanctuary-plant-modal .plant-detail-tag {
+  border: 1px solid color-mix(in srgb, var(--plant-detail-accent) 24%, white);
+  background: color-mix(in srgb, var(--plant-detail-accent) 13%, white);
+  color: var(--plant-detail-accent);
+}
+
+.sanctuary-plant-modal .plant-detail-dates {
+  border-color: color-mix(in srgb, var(--plant-detail-accent) 24%, transparent);
+}
+
+.sanctuary-plant-modal .plant-detail-date,
+.sanctuary-plant-modal .plant-detail-disclaimer {
+  color: color-mix(in srgb, var(--plant-detail-accent) 72%, #687761);
+}
+
+.sanctuary-plant-modal .plant-detail-note {
+  border-color: var(--plant-detail-accent);
+}
+
+.sanctuary-plant-modal .plant-detail-close {
+  border-color: color-mix(in srgb, var(--plant-detail-accent) 32%, white);
+  background: color-mix(in srgb, var(--plant-detail-accent) 8%, #fff9ec);
+  color: var(--plant-detail-accent);
+}
+
+.sanctuary-plant-modal .plant-detail-media {
+  border-bottom: 3px solid var(--plant-detail-accent);
+  border-color: var(--plant-detail-accent);
+}
+
+@media (min-width: 640px) {
+  .sanctuary-plant-modal .plant-detail-media {
+    border-right: 3px solid var(--plant-detail-accent);
+    border-bottom: 0;
+  }
+}
+
+.hockney-summer-plant-overlay {
+  background: rgba(0, 87, 217, 0.4);
+  backdrop-filter: blur(2px);
+}
+
+.hockney-summer-plant-modal {
+  border: 3px solid #0057d9;
+  border-radius: 0 !important;
+  background: #fff22e;
+  box-shadow: 10px 10px 0 rgba(243, 56, 200, 0.72);
+}
+
+.hockney-summer-plant-modal .plant-detail-media {
+  border-bottom: 3px solid #0057d9;
+  background: #16a9d8;
+}
+
+.hockney-summer-plant-modal .plant-detail-media img {
+  filter: saturate(1.08) contrast(1.03);
+}
+
+.hockney-summer-plant-modal .plant-detail-info {
+  background:
+    linear-gradient(155deg, transparent 0 72%, rgba(243, 56, 200, 0.16) 72% 100%),
+    #fff8a6;
+}
+
+.hockney-summer-plant-modal .plant-detail-kicker {
+  color: #f338c8;
+  font-weight: 900;
+}
+
+.hockney-summer-plant-modal .plant-detail-title {
+  color: #0057d9;
+  font-weight: 900;
+}
+
+.hockney-summer-plant-modal .plant-detail-tag {
+  border: 2px solid #0057d9;
+  border-radius: 0;
+  background: #16a9d8;
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 3px 3px 0 #f338c8;
+}
+
+.hockney-summer-plant-modal .plant-detail-dates {
+  border-color: #0057d9;
+}
+
+.hockney-summer-plant-modal .plant-detail-date {
+  color: #0057d9;
+  font-weight: 700;
+}
+
+.hockney-summer-plant-modal .plant-detail-note {
+  border-color: #f338c8;
+  color: #0057d9;
+}
+
+.hockney-summer-plant-modal .plant-detail-disclaimer {
+  color: rgba(0, 87, 217, 0.66);
+  font-weight: 700;
+}
+
+.hockney-summer-plant-modal .plant-detail-close {
+  border: 2px solid #0057d9;
+  border-radius: 0;
+  background: #fff22e;
+  color: #0057d9;
+  box-shadow: 3px 3px 0 #f338c8;
+}
+
+.hockney-summer-plant-modal .plant-detail-close:hover {
+  background: #f338c8;
+  color: #ffffff;
+}
+
+@media (min-width: 640px) {
+  .hockney-summer-plant-modal .plant-detail-media {
+    border-right: 3px solid #0057d9;
+    border-bottom: 0;
+  }
+}
+
+.plant-flip-tile.is-flipping {
+  animation: plant-card-flip 620ms ease-in-out;
+}
+
+@keyframes plant-card-flip {
+  0%, 100% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(90deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plant-flip-tile.is-flipping {
+    animation: none;
+  }
+}
+
 .timeline-filter-panel {
   box-sizing: border-box;
   max-width: 100%;
@@ -962,6 +1330,49 @@ g:hover .hockney-summer-map-marker {
 .hockney-summer-modal p,
 .hockney-summer-modal span {
   color: #0057d9;
+}
+
+.hockney-summer-atlas .plant-atlas-kicker {
+  border: 2px solid #0057d9;
+  border-radius: 0;
+  background: #fff22e;
+  color: #0057d9;
+  box-shadow: 3px 3px 0 rgba(243, 56, 200, 0.34);
+  font-weight: 800;
+}
+
+.hockney-summer-atlas .plant-flip-tile {
+  border: 2px solid #0057d9;
+  border-radius: 0;
+  box-shadow: 4px 4px 0 rgba(243, 56, 200, 0.3);
+}
+
+.hockney-summer-atlas .plant-flip-tile:hover,
+.hockney-summer-atlas .plant-flip-tile:focus-visible {
+  border-color: #f338c8;
+  box-shadow: 4px 4px 0 rgba(0, 87, 217, 0.3);
+}
+
+.hockney-summer-atlas .plant-filter-button {
+  border: 2px solid #0057d9;
+  border-radius: 0;
+  background: #fff8a6;
+  color: #0057d9;
+  box-shadow: 3px 3px 0 rgba(0, 87, 217, 0.18);
+  font-weight: 800;
+}
+
+.hockney-summer-atlas .plant-filter-button:hover {
+  border-color: #f338c8;
+  background: #fff22e;
+  color: #0057d9;
+}
+
+.hockney-summer-atlas .plant-filter-button[class*="bg-[#2F5D4A]"] {
+  border-color: #0057d9;
+  background: #16a9d8;
+  color: #ffffff;
+  box-shadow: 4px 4px 0 #f338c8;
 }
 
 .hockney-summer-modal input,

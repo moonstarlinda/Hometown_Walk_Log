@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, Leaf, Sparkles, X } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 
@@ -101,6 +101,11 @@ interface PlantAtlasProps {
 export default function PlantAtlas({ isHockney, isHockneySummer, isSanctuary }: PlantAtlasProps) {
   const [filter, setFilter] = useState<'all' | PlantCategory>('all');
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
+  const [wallPlants, setWallPlants] = useState(() => PLANTS.slice(-4));
+  const [flippingSlot, setFlippingSlot] = useState<number | null>(null);
+  const wallCursorRef = useRef(0);
+  const wallSlotRef = useRef(0);
+  const hoveredWallSlotsRef = useRef(new Set<number>());
   const reduceMotion = useReducedMotion();
   const filteredPlants = useMemo(
     () => filter === 'all' ? PLANTS : PLANTS.filter((plant) => plant.category === filter),
@@ -110,23 +115,91 @@ export default function PlantAtlas({ isHockney, isHockneySummer, isSanctuary }: 
   const countFor = (id: 'all' | PlantCategory) =>
     id === 'all' ? PLANTS.length : PLANTS.filter((plant) => plant.category === id).length;
 
+  useEffect(() => {
+    if (reduceMotion) return;
+
+    const slotOrder = [2, 0, 3, 1];
+    let swapTimer: ReturnType<typeof setTimeout> | undefined;
+    let finishTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const interval = window.setInterval(() => {
+      if (document.hidden) return;
+
+      let slot = slotOrder[wallSlotRef.current % slotOrder.length];
+      for (let attempt = 0; attempt < slotOrder.length; attempt += 1) {
+        const candidateSlot = slotOrder[(wallSlotRef.current + attempt) % slotOrder.length];
+        if (!hoveredWallSlotsRef.current.has(candidateSlot)) {
+          slot = candidateSlot;
+          wallSlotRef.current += attempt + 1;
+          break;
+        }
+      }
+
+      setFlippingSlot(slot);
+      swapTimer = setTimeout(() => {
+        setWallPlants((current) => {
+          let nextPlant = PLANTS[wallCursorRef.current % PLANTS.length];
+          let attempts = 0;
+          while (current.some((plant) => plant.id === nextPlant.id) && attempts < PLANTS.length) {
+            wallCursorRef.current += 1;
+            nextPlant = PLANTS[wallCursorRef.current % PLANTS.length];
+            attempts += 1;
+          }
+          wallCursorRef.current += 1;
+          return current.map((plant, index) => index === slot ? nextPlant : plant);
+        });
+      }, 300);
+      finishTimer = setTimeout(() => setFlippingSlot(null), 620);
+    }, 2800);
+
+    return () => {
+      window.clearInterval(interval);
+      if (swapTimer) clearTimeout(swapTimer);
+      if (finishTimer) clearTimeout(finishTimer);
+    };
+  }, [reduceMotion]);
+
   return (
-    <section className="plant-atlas space-y-6">
+    <section className={`plant-atlas space-y-6 ${isHockneySummer ? 'hockney-summer-atlas' : isSanctuary ? 'sanctuary-plant-atlas' : !isHockney ? 'default-plant-atlas' : ''}`}>
       <div className={`plant-atlas-hero overflow-hidden rounded-2xl border border-[#D8E0D1] bg-[#F7F4E8] px-5 py-7 sm:px-8 sm:py-9 ${
         isHockneySummer ? 'hockney-summer-panel' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
       }`}>
-        <div className="relative z-10 max-w-2xl">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#CED9C5] bg-white/55 px-3 py-1 text-xs text-[#667A5E]">
-            <Leaf className="h-3.5 w-3.5" />
-            散步中的草木相遇
+        <div className="relative z-10 grid items-stretch gap-7 lg:grid-cols-2 lg:gap-10">
+          <div className="flex flex-col justify-center">
+            <div className="plant-atlas-kicker mb-4 inline-flex w-fit max-w-max self-start items-center gap-1.5 whitespace-nowrap rounded-full border border-[#CED9C5] bg-white/55 px-2.5 py-1 text-xs text-[#667A5E]">
+              <Leaf className="h-3.5 w-3.5" />
+              散步中的草木相遇
+            </div>
+            <h1 className="font-serif text-3xl font-semibold tracking-tight text-[#243C32] sm:text-4xl">植物图鉴</h1>
+            <p className="mt-3 max-w-xl text-sm leading-7 text-[#687761] sm:text-base">
+              我在日常散步中见过的树、花与草木。比起准确地命名，这里更想保存每一次认真看见。
+            </p>
+            <div className="mt-6 flex items-baseline gap-2 text-[#2F5D4A]">
+              <strong className="font-serif text-4xl font-semibold">24</strong>
+              <span className="text-sm">种植物已收录</span>
+            </div>
           </div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-[#243C32] sm:text-4xl">植物图鉴</h1>
-          <p className="mt-3 max-w-xl text-sm leading-7 text-[#687761] sm:text-base">
-            我在日常散步中见过的树、花与草木。比起准确地命名，这里更想保存每一次认真看见。
-          </p>
-          <div className="mt-6 flex items-baseline gap-2 text-[#2F5D4A]">
-            <strong className="font-serif text-4xl font-semibold">24</strong>
-            <span className="text-sm">种植物已收录</span>
+
+          <div className="plant-flip-wall relative grid grid-cols-3 gap-2 sm:gap-2.5 lg:h-full lg:grid-cols-4" aria-label="轮换展示的植物">
+            {wallPlants.map((plant, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => setSelectedPlant(plant)}
+                onMouseEnter={() => hoveredWallSlotsRef.current.add(index)}
+                onMouseLeave={() => hoveredWallSlotsRef.current.delete(index)}
+                onFocus={() => hoveredWallSlotsRef.current.add(index)}
+                onBlur={() => hoveredWallSlotsRef.current.delete(index)}
+                className={`plant-flip-tile group relative aspect-[4/3] cursor-pointer overflow-hidden rounded-lg bg-[#DCE6D5] text-left shadow-sm lg:aspect-auto lg:h-full ${index >= 3 ? 'hidden lg:block' : ''} ${flippingSlot === index ? 'is-flipping' : ''}`}
+                aria-label={`查看${plant.name}`}
+              >
+                {plant.image && <img src={plant.image} alt="" className="plant-flip-image h-full w-full object-cover" />}
+                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#172A20]/80 to-transparent px-2.5 pb-2 pt-6 text-xs font-medium text-white">
+                  <span className="mr-1.5 font-mono text-[9px] opacity-70">{String(plant.id).padStart(2, '0')}</span>
+                  {plant.name}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -136,8 +209,10 @@ export default function PlantAtlas({ isHockney, isHockneySummer, isSanctuary }: 
           <button
             key={item.id}
             type="button"
+            data-filter={item.id}
+            aria-pressed={filter === item.id}
             onClick={() => setFilter(item.id)}
-            className={`rounded-full border px-4 py-2 text-xs transition-colors ${
+            className={`plant-filter-button rounded-full border px-4 py-2 text-xs transition-colors ${
               filter === item.id
                 ? 'border-[#2F5D4A] bg-[#2F5D4A] text-[#FFFDF4]'
                 : 'border-[#D6DFCE] bg-[#FFFDF7] text-[#63735E] hover:bg-[#EEF4E8]'
@@ -158,27 +233,28 @@ export default function PlantAtlas({ isHockney, isHockneySummer, isSanctuary }: 
                 exit={reduceMotion ? undefined : { opacity: 0, scale: 0.97 }}
                 key={plant.id}
                 type="button"
+                data-category={plant.category}
                 onClick={() => setSelectedPlant(plant)}
-                className={`group overflow-hidden rounded-xl border border-[#DCE3D6] bg-[#FFFDF7] text-left shadow-sm shadow-emerald-950/5 transition hover:-translate-y-0.5 hover:shadow-md ${
+                className={`plant-window-card group cursor-pointer overflow-hidden rounded-xl border border-[#DCE3D6] bg-[#FFFDF7] p-2 text-left shadow-sm shadow-emerald-950/5 transition hover:-translate-y-0.5 hover:shadow-md sm:p-2.5 ${
                   isHockneySummer ? 'hockney-summer-panel' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
                 }`}
               >
-                <div className="relative aspect-[4/5] overflow-hidden" style={{ background: `linear-gradient(145deg, ${palette[0]}, #F3F0E2)` }}>
+                <div className="plant-window-frame relative aspect-[4/5] overflow-hidden rounded-lg" style={{ background: `linear-gradient(145deg, ${palette[0]}, #F3F0E2)` }}>
                   {plant.image ? (
-                    <img src={plant.image} alt={plant.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+                    <img src={plant.image} alt={plant.name} loading="lazy" decoding="async" className="plant-window-image h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center">
                       <Leaf className="h-16 w-16 opacity-45 sm:h-20 sm:w-20" strokeWidth={1} style={{ color: palette[1] }} />
                     </div>
                   )}
-                  <span className="absolute right-3 top-3 font-serif text-xs tracking-[0.18em] text-[#40533D]/65">
-                    {String(plant.id).padStart(2, '0')}
-                  </span>
                   {!plant.image && <span className="absolute bottom-3 left-3 text-[10px] text-[#60705A]/60">等待植物照片</span>}
                 </div>
-                <div className="p-3 sm:p-4">
-                  <h2 className="font-serif text-base font-semibold text-[#293D32] sm:text-lg">{plant.name}</h2>
-                  <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-[11px] text-[#71806B]">
+                <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 px-1 pb-1 pt-3 sm:gap-x-3 sm:px-1.5 sm:pt-3.5">
+                  <span className="row-span-2 pt-0.5 font-mono text-[10px] tracking-[0.14em] text-[#899386] sm:text-[11px]">
+                    {String(plant.id).padStart(2, '0')}
+                  </span>
+                  <h2 className="truncate font-serif text-base font-semibold text-[#293D32] sm:text-lg">{plant.name}</h2>
+                  <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-[10px] text-[#71806B] sm:text-[11px]">
                     <span>{CATEGORY_LABELS[plant.category]}</span>
                     <span>{plant.firstSeen.replaceAll('.', '/')}</span>
                   </div>
@@ -195,32 +271,37 @@ export default function PlantAtlas({ isHockney, isHockneySummer, isSanctuary }: 
       <AnimatePresence>
         {selectedPlant && (
           <motion.div
-            className="fixed inset-0 z-[150] flex items-end justify-center bg-[#1B2B23]/45 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+            className={`plant-detail-overlay fixed inset-0 z-[150] flex items-end justify-center bg-[#1B2B23]/45 p-0 backdrop-blur-sm sm:items-center sm:p-6 ${
+              isHockneySummer ? 'hockney-summer-plant-overlay' : isHockney ? 'hockney-plant-overlay' : isSanctuary ? 'sanctuary-plant-overlay' : ''
+            }`}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onMouseDown={(event) => event.target === event.currentTarget && setSelectedPlant(null)}
           >
             <motion.div
               role="dialog" aria-modal="true" aria-label={selectedPlant.name}
+              data-category={selectedPlant.category}
               initial={reduceMotion ? false : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
-              className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-2xl bg-[#FFFDF7] shadow-2xl sm:rounded-2xl"
+              className={`plant-detail-modal max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-2xl bg-[#FFFDF7] shadow-2xl sm:rounded-2xl ${
+                isHockneySummer ? 'hockney-summer-plant-modal' : isHockney ? 'hockney-plant-modal' : isSanctuary ? 'sanctuary-plant-modal' : 'default-plant-modal'
+              }`}
             >
-              <button type="button" onClick={() => setSelectedPlant(null)} aria-label="关闭" className="sticky right-3 top-3 z-20 float-right m-3 flex h-9 w-9 items-center justify-center rounded-full border border-[#D9E0D3] bg-[#FFFDF7]/90 text-[#52654E] shadow-sm">
+              <button type="button" onClick={() => setSelectedPlant(null)} aria-label="关闭" className="plant-detail-close sticky right-3 top-3 z-20 float-right m-3 flex h-9 w-9 items-center justify-center rounded-full border border-[#D9E0D3] bg-[#FFFDF7]/90 text-[#52654E] shadow-sm">
                 <X className="h-4 w-4" />
               </button>
               <div className="grid sm:grid-cols-[1.05fr_1fr]">
-                <div className="flex min-h-72 items-center justify-center bg-[#E4E9D9] sm:min-h-[500px]">
+                <div className="plant-detail-media flex min-h-72 items-center justify-center bg-[#E4E9D9] sm:min-h-[500px]">
                   {selectedPlant.image ? <img src={selectedPlant.image} alt={selectedPlant.name} className="h-full w-full object-cover" /> : <Leaf className="h-28 w-28 text-[#78916E]/45" strokeWidth={0.9} />}
                 </div>
-                <div className="p-6 pt-8 sm:p-8 sm:pt-12">
-                  <span className="text-xs tracking-[0.2em] text-[#86917F]">PLANT {String(selectedPlant.id).padStart(2, '0')}</span>
-                  <h2 className="mt-3 font-serif text-3xl font-semibold text-[#243C32]">{selectedPlant.name}</h2>
-                  <span className="mt-3 inline-flex rounded-full bg-[#EEF3E8] px-3 py-1 text-xs text-[#60745A]">{CATEGORY_LABELS[selectedPlant.category]}</span>
-                  <div className="mt-8 border-t border-[#E2E6DC] pt-5">
-                    <p className="flex items-center gap-2 text-xs text-[#758071]"><CalendarDays className="h-4 w-4" /> 初次记录 · {selectedPlant.firstSeen}</p>
-                    {selectedPlant.seenAgain && <p className="mt-3 text-xs leading-6 text-[#758071]">再次记录 · {selectedPlant.seenAgain.join(' · ')}</p>}
+                <div className="plant-detail-info p-6 pt-8 sm:p-8 sm:pt-12">
+                  <span className="plant-detail-kicker text-xs tracking-[0.2em] text-[#86917F]">PLANT {String(selectedPlant.id).padStart(2, '0')}</span>
+                  <h2 className="plant-detail-title mt-3 font-serif text-3xl font-semibold text-[#243C32]">{selectedPlant.name}</h2>
+                  <span className="plant-detail-tag mt-3 inline-flex rounded-full bg-[#EEF3E8] px-3 py-1 text-xs text-[#60745A]">{CATEGORY_LABELS[selectedPlant.category]}</span>
+                  <div className="plant-detail-dates mt-8 border-t border-[#E2E6DC] pt-5">
+                    <p className="plant-detail-date flex items-center gap-2 text-xs text-[#758071]"><CalendarDays className="h-4 w-4" /> 初次记录 · {selectedPlant.firstSeen}</p>
+                    {selectedPlant.seenAgain && <p className="plant-detail-date mt-3 text-xs leading-6 text-[#758071]">再次记录 · {selectedPlant.seenAgain.join(' · ')}</p>}
                   </div>
-                  {selectedPlant.note && <p className="mt-6 border-l-2 border-[#A5B79B] pl-4 text-sm leading-7 text-[#566452]">{selectedPlant.note}</p>}
-                  <p className="mt-8 text-[11px] leading-5 text-[#92998E]">AI 辅助识别，仅作为散步观察记录。</p>
+                  {selectedPlant.note && <p className="plant-detail-note mt-6 border-l-2 border-[#A5B79B] pl-4 text-sm leading-7 text-[#566452]">{selectedPlant.note}</p>}
+                  <p className="plant-detail-disclaimer mt-8 text-[11px] leading-5 text-[#92998E]">AI 辅助识别，仅作为散步观察记录。</p>
                 </div>
               </div>
             </motion.div>
