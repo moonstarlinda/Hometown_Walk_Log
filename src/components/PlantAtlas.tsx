@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CalendarDays, Leaf, Sparkles, X } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 
@@ -104,11 +104,6 @@ interface PlantAtlasProps {
 export default function PlantAtlas({ isHockney, isHockneySummer, isSanctuary }: PlantAtlasProps) {
   const [filter, setFilter] = useState<'all' | PlantCategory>('all');
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
-  const [wallPlants, setWallPlants] = useState(() => PLANTS.slice(-4));
-  const [flippingSlot, setFlippingSlot] = useState<number | null>(null);
-  const wallCursorRef = useRef(0);
-  const wallSlotRef = useRef(0);
-  const hoveredWallSlotsRef = useRef(new Set<number>());
   const reduceMotion = useReducedMotion();
   const filteredPlants = useMemo(
     () => filter === 'all' ? PLANTS : PLANTS.filter((plant) => plant.category === filter),
@@ -118,95 +113,31 @@ export default function PlantAtlas({ isHockney, isHockneySummer, isSanctuary }: 
   const countFor = (id: 'all' | PlantCategory) =>
     id === 'all' ? PLANTS.length : PLANTS.filter((plant) => plant.category === id).length;
 
-  useEffect(() => {
-    if (reduceMotion) return;
-
-    const slotOrder = [2, 0, 3, 1];
-    let swapTimer: ReturnType<typeof setTimeout> | undefined;
-    let finishTimer: ReturnType<typeof setTimeout> | undefined;
-
-    const interval = window.setInterval(() => {
-      if (document.hidden) return;
-
-      let slot = slotOrder[wallSlotRef.current % slotOrder.length];
-      for (let attempt = 0; attempt < slotOrder.length; attempt += 1) {
-        const candidateSlot = slotOrder[(wallSlotRef.current + attempt) % slotOrder.length];
-        if (!hoveredWallSlotsRef.current.has(candidateSlot)) {
-          slot = candidateSlot;
-          wallSlotRef.current += attempt + 1;
-          break;
-        }
-      }
-
-      setFlippingSlot(slot);
-      swapTimer = setTimeout(() => {
-        setWallPlants((current) => {
-          let nextPlant = PLANTS[wallCursorRef.current % PLANTS.length];
-          let attempts = 0;
-          while (current.some((plant) => plant.id === nextPlant.id) && attempts < PLANTS.length) {
-            wallCursorRef.current += 1;
-            nextPlant = PLANTS[wallCursorRef.current % PLANTS.length];
-            attempts += 1;
-          }
-          wallCursorRef.current += 1;
-          return current.map((plant, index) => index === slot ? nextPlant : plant);
-        });
-      }, 300);
-      finishTimer = setTimeout(() => setFlippingSlot(null), 620);
-    }, 2800);
-
-    return () => {
-      window.clearInterval(interval);
-      if (swapTimer) clearTimeout(swapTimer);
-      if (finishTimer) clearTimeout(finishTimer);
-    };
-  }, [reduceMotion]);
-
   return (
     <section className={`plant-atlas space-y-6 ${isHockneySummer ? 'hockney-summer-atlas' : isSanctuary ? 'sanctuary-plant-atlas' : !isHockney ? 'default-plant-atlas' : ''}`}>
-      <div className={`plant-atlas-hero overflow-hidden rounded-2xl border border-[#D8E0D1] bg-[#F7F4E8] px-5 py-7 sm:px-8 sm:py-9 ${
+      <div className={`plant-atlas-hero relative min-h-[250px] overflow-hidden rounded-2xl border border-[#D8E0D1] bg-[#F7F4E8] px-5 py-7 sm:min-h-[280px] sm:px-8 sm:py-8 lg:flex lg:items-center lg:py-6 ${
         isHockneySummer ? 'hockney-summer-panel' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
       }`}>
-        <div className="relative z-10 grid items-stretch gap-7 lg:grid-cols-2 lg:gap-10">
-          <div className="flex flex-col justify-center">
-            <div className="plant-atlas-kicker mb-4 inline-flex w-fit max-w-max self-start items-center gap-1.5 whitespace-nowrap rounded-full border border-[#CED9C5] bg-white/55 px-2.5 py-1 text-xs text-[#667A5E]">
+        <div
+          aria-hidden="true"
+          className="plant-atlas-artwork pointer-events-none absolute inset-0 hidden select-none sm:block"
+        />
+        <div className="relative z-10 flex max-w-xl flex-col justify-center sm:max-w-[58%] lg:max-w-[46%]">
+            <div className="plant-atlas-kicker mb-4 inline-flex w-fit max-w-max self-start items-center gap-1.5 whitespace-nowrap rounded-full border border-[#CED9C5] bg-white/55 px-2.5 py-1 text-xs text-[#667A5E] lg:mb-3">
               <Leaf className="h-3.5 w-3.5" />
               散步中的草木相遇
             </div>
-            <h1 className="font-serif text-3xl font-semibold tracking-tight text-[#243C32] sm:text-4xl">植物图鉴</h1>
-            <p className="mt-3 max-w-xl text-sm leading-7 text-[#687761] sm:text-base">
+            <h1 className="plant-atlas-title font-serif text-3xl font-semibold tracking-tight text-[#243C32] sm:text-4xl">植物图鉴</h1>
+            <p className="plant-atlas-description mt-3 max-w-xl text-sm leading-7 text-[#687761] sm:text-base lg:mt-2 lg:leading-6">
               我在日常散步中见过的树、花与草木。比起准确地命名，这里更想保存每一次认真看见。
             </p>
-            <p className="mt-2 text-xs text-[#879181]">
+            <p className="plant-atlas-ai-note mt-2 text-xs text-[#879181] lg:mt-1.5">
               （植物种类由 AI 辅助识别）
             </p>
-            <div className="mt-6 flex items-baseline gap-2 text-[#2F5D4A]">
+            <div className="plant-atlas-count mt-6 flex items-baseline gap-2 text-[#2F5D4A] lg:mt-4">
               <strong className="font-serif text-4xl font-semibold">{PLANTS.length}</strong>
               <span className="text-sm">种植物已收录</span>
             </div>
-          </div>
-
-          <div className="plant-flip-wall relative grid grid-cols-3 gap-2 sm:gap-2.5 lg:h-full lg:grid-cols-4" aria-label="轮换展示的植物">
-            {wallPlants.map((plant, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => setSelectedPlant(plant)}
-                onMouseEnter={() => hoveredWallSlotsRef.current.add(index)}
-                onMouseLeave={() => hoveredWallSlotsRef.current.delete(index)}
-                onFocus={() => hoveredWallSlotsRef.current.add(index)}
-                onBlur={() => hoveredWallSlotsRef.current.delete(index)}
-                className={`plant-flip-tile group relative aspect-[4/3] cursor-pointer overflow-hidden rounded-lg bg-[#DCE6D5] text-left shadow-sm lg:aspect-auto lg:h-full ${index >= 3 ? 'hidden lg:block' : ''} ${flippingSlot === index ? 'is-flipping' : ''}`}
-                aria-label={`查看${plant.name}`}
-              >
-                {plant.image && <img src={plant.image} alt="" className="plant-flip-image h-full w-full object-cover" />}
-                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#172A20]/80 to-transparent px-2.5 pb-2 pt-6 text-xs font-medium text-white">
-                  <span className="mr-1.5 font-mono text-[9px] opacity-70">{String(plant.id).padStart(2, '0')}</span>
-                  {plant.name}
-                </span>
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 

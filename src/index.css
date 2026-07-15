@@ -24,26 +24,18 @@ textarea {
   max-width: 100%;
 }
 
-.plant-flip-wall {
-  perspective: 900px;
+.plant-atlas-artwork {
+  opacity: 1;
+  filter: none;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
-.plant-flip-tile {
-  transform-origin: center;
-  backface-visibility: hidden;
-  will-change: transform;
-}
-
-.plant-flip-image {
-  transform: scale(1.015);
-  filter: brightness(0.82) saturate(0.72) contrast(0.94) blur(0.6px);
-  transition: filter 420ms ease, transform 500ms ease;
-}
-
-.plant-flip-tile:hover .plant-flip-image,
-.plant-flip-tile:focus-visible .plant-flip-image {
-  transform: scale(1.05);
-  filter: brightness(0.92) saturate(0.9) contrast(0.98) blur(0.2px);
+@media (min-width: 640px) {
+  .plant-atlas-artwork {
+    background-image: url('/images/plants/pinus_tabuliformis_hero.png');
+  }
 }
 
 .plant-window-frame::after {
@@ -128,24 +120,22 @@ textarea {
   color: var(--plant-herb);
 }
 
-.sanctuary-plant-atlas .plant-flip-tile {
-  border: 2px solid var(--plant-tree);
-  box-shadow: 3px 3px 0 rgba(78, 139, 91, 0.2);
+.sanctuary-plant-atlas .plant-atlas-artwork {
+  opacity: 0.76;
+  filter: sepia(0.12) saturate(0.78) hue-rotate(330deg) contrast(0.9) brightness(1.06);
+  mix-blend-mode: multiply;
 }
 
-.sanctuary-plant-atlas .plant-flip-tile:nth-child(2) {
-  border-color: var(--plant-shrub);
-  box-shadow: 3px 3px 0 rgba(217, 140, 58, 0.2);
-}
-
-.sanctuary-plant-atlas .plant-flip-tile:nth-child(3) {
-  border-color: var(--plant-herb);
-  box-shadow: 3px 3px 0 rgba(122, 92, 140, 0.2);
-}
-
-.sanctuary-plant-atlas .plant-flip-tile:nth-child(4) {
-  border-color: var(--plant-vine);
-  box-shadow: 3px 3px 0 rgba(75, 163, 195, 0.2);
+.plant-atlas-hero.hockney-card .plant-atlas-artwork {
+  opacity: 0.66;
+  filter:
+    grayscale(0.86)
+    sepia(0.18)
+    saturate(1.12)
+    hue-rotate(118deg)
+    contrast(1.08)
+    brightness(0.98);
+  mix-blend-mode: multiply;
 }
 
 .sanctuary-plant-atlas .plant-filter-button {
@@ -370,25 +360,6 @@ textarea {
   .hockney-summer-plant-modal .plant-detail-media {
     border-right: 3px solid #0057d9;
     border-bottom: 0;
-  }
-}
-
-.plant-flip-tile.is-flipping {
-  animation: plant-card-flip 620ms ease-in-out;
-}
-
-@keyframes plant-card-flip {
-  0%, 100% {
-    transform: rotateY(0deg);
-  }
-  50% {
-    transform: rotateY(90deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .plant-flip-tile.is-flipping {
-    animation: none;
   }
 }
 
@@ -1360,16 +1331,65 @@ g:hover .hockney-summer-map-marker {
   font-weight: 800;
 }
 
-.hockney-summer-atlas .plant-flip-tile {
-  border: 2px solid #0057d9;
-  border-radius: 0;
-  box-shadow: 4px 4px 0 rgba(243, 56, 200, 0.3);
+.hockney-summer-atlas .plant-atlas-title,
+.hockney-summer-atlas .plant-atlas-count {
+  color: #0057d9;
 }
 
-.hockney-summer-atlas .plant-flip-tile:hover,
-.hockney-summer-atlas .plant-flip-tile:focus-visible {
-  border-color: #f338c8;
-  box-shadow: 4px 4px 0 rgba(0, 87, 217, 0.3);
+.hockney-summer-atlas .plant-atlas-description {
+  color: rgba(0, 87, 217, 0.84);
+  font-weight: 600;
+}
+
+.hockney-summer-atlas .plant-atlas-ai-note {
+  color: rgba(0, 87, 217, 0.64);
+  font-weight: 700;
+}
+
+.hockney-summer-atlas .plant-atlas-hero {
+  background: #fff8a6;
+}
+
+.hockney-summer-atlas .plant-atlas-artwork {
+  display: none;
+}
+
+.hockney-summer-atlas .plant-atlas-hero::before,
+.hockney-summer-atlas .plant-atlas-hero::after {
+  content: "";
+  position: absolute;
+  display: none;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.hockney-summer-atlas .plant-atlas-hero::before {
+  top: -78%;
+  right: 17%;
+  width: 39%;
+  height: 142%;
+  background: #20a8d8;
+  opacity: 0.92;
+  transform: rotate(-12deg);
+}
+
+.hockney-summer-atlas .plant-atlas-hero::after {
+  right: -9%;
+  bottom: -66%;
+  width: 47%;
+  height: 132%;
+  background: #ff77ae;
+  opacity: 0.88;
+  transform: rotate(-10deg);
+  mix-blend-mode: multiply;
+}
+
+@media (min-width: 640px) {
+  .hockney-summer-atlas .plant-atlas-hero::before,
+  .hockney-summer-atlas .plant-atlas-hero::after {
+    display: block;
+  }
 }
 
 .hockney-summer-atlas .plant-filter-button {
