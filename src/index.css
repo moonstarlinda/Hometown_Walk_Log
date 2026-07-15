@@ -677,6 +677,25 @@ header.sticky {
   z-index: 1;
 }
 
+.hockney-summer-tribute {
+  color: #0057d9;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.hockney-summer-tribute-link {
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 87, 217, 0.38);
+  text-underline-offset: 3px;
+  transition: color 160ms ease, text-decoration-color 160ms ease;
+}
+
+.hockney-summer-tribute-link:hover,
+.hockney-summer-tribute-link:focus-visible {
+  color: #f338c8;
+  text-decoration-color: currentColor;
+}
+
 .hockney-summer-root > header {
   position: sticky;
   z-index: 80;

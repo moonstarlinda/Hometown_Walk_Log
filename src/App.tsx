@@ -1311,7 +1311,20 @@ export default function App() {
       </main>
 
       <footer className="mx-auto max-w-6xl px-4 pb-8 pt-4 text-xs text-[#7D8C74] sm:px-6 lg:px-8">
-        2026 散步笔记
+        <span>2026 散步笔记</span>
+        {isHockneySummer && (
+          <span className="hockney-summer-tribute ml-2">
+            · 视觉主题致敬{' '}
+            <a
+              href="https://www.hockney.com/home"
+              target="_blank"
+              rel="noreferrer"
+              className="hockney-summer-tribute-link"
+            >
+              David Hockney
+            </a>
+          </span>
+        )}
       </footer>
 
       <AnimatePresence>

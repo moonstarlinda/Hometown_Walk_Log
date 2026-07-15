@@ -76,6 +76,9 @@ export const PLANTS: Plant[] = [
    },
   { id: 24, name: '野大豆', category: 'vine', firstSeen: '2026.07.11',
     image: '/images/plants/glycine_soja.jpg'
+   },
+   { id: 25, name: '珍珠梅', category: 'shrub', firstSeen: '2026.07.15',
+    image: '/images/plants/cordyline_fruticosa.jpg'
    }
 ];
 
@@ -174,8 +177,11 @@ export default function PlantAtlas({ isHockney, isHockneySummer, isSanctuary }: 
             <p className="mt-3 max-w-xl text-sm leading-7 text-[#687761] sm:text-base">
               我在日常散步中见过的树、花与草木。比起准确地命名，这里更想保存每一次认真看见。
             </p>
+            <p className="mt-2 text-xs text-[#879181]">
+              （植物种类由 AI 辅助识别）
+            </p>
             <div className="mt-6 flex items-baseline gap-2 text-[#2F5D4A]">
-              <strong className="font-serif text-4xl font-semibold">24</strong>
+              <strong className="font-serif text-4xl font-semibold">{PLANTS.length}</strong>
               <span className="text-sm">种植物已收录</span>
             </div>
           </div>
