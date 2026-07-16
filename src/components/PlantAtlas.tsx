@@ -60,8 +60,8 @@ export const PLANTS: Plant[] = [
     image: '/images/plants/betula_platyphylla.jpg'},
   { id: 18, name: '葎草', category: 'vine', firstSeen: '2026.07.05',
     image: '/images/plants/cayratia_japonica.jpg'},
-  { id: 19, name: '龙芽草', category: 'herb', firstSeen: '2026.07.05',
-    image: '/images/plants/elymus_sibiricus.jpg'
+  { id: 19, name: '龙芽草', category: 'herb', firstSeen: '2026.07.05',seenAgain: ['2026.07.16'],
+    image: '/images/plants/agrimonia_pilosa.jpg'
    },
   { id: 20, name: '蒙古栎', category: 'tree', firstSeen: '2026.07.11',
     image: '/images/plants/quercus_mongolica.jpg'},
@@ -78,7 +78,31 @@ export const PLANTS: Plant[] = [
     image: '/images/plants/glycine_soja.jpg'
    },
    { id: 25, name: '珍珠梅', category: 'shrub', firstSeen: '2026.07.15',
-    image: '/images/plants/cordyline_fruticosa.jpg'
+    image: '/images/plants/sorbaria_sorbifolia.jpg'
+   },
+   {  id: 26, name: '柳叶蒿', category: 'herb', firstSeen: '2026.07.16',
+    image: '/images/plants/artemisia_leptophylla.jpg'
+   },
+   { id: 27, name: '牛蒡', category: 'herb', firstSeen: '2026.07.16',
+    image: '/images/plants/arctium_lappa.jpg'
+   },
+   { id: 28, name: '玉簪', category: 'herb', firstSeen: '2026.07.16',
+    image: '/images/plants/hosta_plantaginea.jpg'
+   },
+   { id: 29, name: '鸭跖草', category: 'herb', firstSeen: '2026.07.16',
+    image: '/images/plants/commelina_benghalensis.jpg'
+   },
+   {id: 30, name: '落叶松', category: 'tree', firstSeen: '2026.07.16',
+    image: '/images/plants/larix_gmelinii.jpg'
+   },
+   {id: 31, name: '樟子松', category: 'tree', firstSeen: '2026.07.16',
+    image: '/images/plants/pinus_sylvestris.jpg'
+   },
+   {id: 32, name: '黄海棠', category: 'herb', firstSeen: '2026.07.16',
+    image: '/images/plants/huanghaitang.jpg'
+   },
+   { id: 33, name: '胡枝子', category: 'shrub', firstSeen: '2026.07.16',
+    image: '/images/plants/lespedeza_bicolor.jpg'
    }
 ];
 
