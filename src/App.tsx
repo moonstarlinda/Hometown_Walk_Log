@@ -1095,26 +1095,51 @@ export default function App() {
 
         {showHome && (
           <section className={isHockneySummer ? 'hockney-summer-home space-y-6' : isHockney ? 'hockney-home space-y-7' : 'space-y-8'}>
-            <section className={isHockneySummer ? 'hockney-summer-map-hero space-y-3' : isHockney ? 'hockney-map-hero space-y-3' : 'space-y-3'}>
-              <SectionHeading
-                title="探索地图"
-                description="基地位置分布图，按发现的先后顺序编号。鼠标悬停速览，点击进入基地。"
-              />
-              <WalkMap
-                bases={bases}
-                selectedBaseId={selectedBaseId}
-                onSelectBase={setSelectedBaseId}
-                latestLogPerBase={latestLogPerBase}
-                isHockney={isHockney}
-                isHockneySummer={isHockneySummer}
-                isSanctuary={isSanctuary}
-              />
+            <section className={`home-field-hero grid gap-3 ${
+              isHockneySummer ? 'hockney-summer-map-hero' : isHockney ? 'hockney-map-hero' : isSanctuary ? 'sanctuary-home-hero' : ''
+            }`}>
+              <div className="home-field-intro hidden min-w-0 flex-col justify-center lg:flex">
+                <span className="home-field-kicker mb-4 inline-flex w-fit items-center gap-1.5 rounded-full border border-[#CED9C5] bg-white/55 px-3 py-1.5 text-xs text-[#667A5E]">
+                  <MapPin className="h-3.5 w-3.5" /> 家乡散步档案
+                </span>
+                <h1 className="home-field-title max-w-md font-serif text-4xl font-semibold leading-tight tracking-tight text-[#243C32]">
+                  沿着河流，重新认识家乡
+                </h1>
+                <p className="home-field-description mt-4 max-w-md text-sm leading-7 text-[#66745E]">
+                  六处散步基地，沿着河流、树林与常走路线慢慢展开。地图不是精确坐标，而是一份逐渐长出来的私人地理。
+                </p>
+                {sortedLogs[0] && (
+                  <p className="home-field-latest mt-6 text-[11px] text-[#879181]">
+                    最近记录 · {sortedLogs[0].date.replaceAll('-', '.')}
+                  </p>
+                )}
+              </div>
+
+              <div className="home-field-mobile-heading lg:hidden">
+                <SectionHeading
+                  title="探索地图"
+                  description="轻触基地圆点，进入对应日志。"
+                />
+              </div>
+
+              <div className="home-field-map min-w-0">
+                <WalkMap
+                  bases={bases}
+                  selectedBaseId={selectedBaseId}
+                  onSelectBase={setSelectedBaseId}
+                  latestLogPerBase={latestLogPerBase}
+                  isHockney={isHockney}
+                  isHockneySummer={isHockneySummer}
+                  isSanctuary={isSanctuary}
+                  isHomeHero
+                />
+              </div>
             </section>
 
             <section className={isHockneySummer ? 'hockney-summer-notes-section space-y-3' : 'space-y-3'}>
               <SectionHeading
-                title="基地卡片"
-                description="每张卡片展示该基地的最新记录和照片。点击查看该基地的所有日志。"
+                title="六处散步基地"
+                description="从河岸、松林到山间长椅，每张卡片通向一处持续观察的地方。"
               />
 
               <div className={isHockneySummer ? 'hockney-summer-notes-grid' : 'grid gap-4 md:grid-cols-2 lg:grid-cols-3'}>

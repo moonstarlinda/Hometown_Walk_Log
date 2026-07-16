@@ -15,6 +15,7 @@ interface WalkMapProps {
   isHockney?: boolean;
   isHockneySummer?: boolean;
   isSanctuary?: boolean;
+  isHomeHero?: boolean;
 }
 
 const SANCTUARY_COLORS: Record<string, { accent: string; soft: string; text: string }> = {
@@ -36,8 +37,8 @@ function isDoubleTreeBenchBase(base: Base) {
 
 function getLabelOffset(base: Base) {
   if (base.id === 'base-2') return { x: -34, y: -36 };
-  if (base.id === 'base-3') return { x: -6, y: -46 };
-  if (isDoubleTreeBenchBase(base)) return { x: -30, y: -52 };
+  if (base.id === 'base-3') return { x: -70, y: -46 };
+  if (isDoubleTreeBenchBase(base)) return { x: -46, y: -52 };
   return { x: 0, y: -28 };
 }
 
@@ -48,7 +49,8 @@ export default function WalkMap({
   latestLogPerBase,
   isHockney = false,
   isHockneySummer = false,
-  isSanctuary = false
+  isSanctuary = false,
+  isHomeHero = false
 }: WalkMapProps) {
   const [hoveredBaseId, setHoveredBaseId] = useState<string | null>(null);
 
@@ -106,14 +108,14 @@ export default function WalkMap({
     <section
       className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-3 shadow-sm shadow-emerald-950/5 ${
         isHockneySummer ? 'hockney-summer-map-card' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-map-card' : ''
-      }`}
+      } ${isHomeHero ? 'home-hero-map-card' : ''}`}
     >
       <div className={`relative overflow-x-auto ${isHockneySummer ? 'hockney-summer-map-viewport' : ''}`}>
         <svg
           viewBox="0 0 820 360"
           className={`block h-[230px] w-full rounded-lg border border-[#E4E8D7] bg-[#F8F7EF] sm:h-[290px] lg:h-[340px] ${
             isHockneySummer ? 'hockney-summer-map-surface' : isHockney ? 'hockney-map-surface' : isSanctuary ? 'sanctuary-map-surface' : ''
-          }`}
+          } ${isHomeHero ? 'home-hero-map-surface' : ''}`}
           preserveAspectRatio="xMidYMid meet"
         >
           <defs>
@@ -221,10 +223,49 @@ export default function WalkMap({
               <g
                 key={base.id}
                 className="cursor-pointer"
+                role="button"
+                tabIndex={0}
+                aria-label={`进入${base.title}`}
                 onClick={() => onSelectBase(base.id)}
                 onMouseEnter={() => setHoveredBaseId(base.id)}
                 onMouseLeave={() => setHoveredBaseId(null)}
+                onFocus={() => setHoveredBaseId(base.id)}
+                onBlur={() => setHoveredBaseId(null)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onSelectBase(base.id);
+                  }
+                }}
               >
+                {isHockneySummer ? (
+                  <rect
+                    x={pos.x - 22}
+                    y={pos.y - 22}
+                    width="44"
+                    height="44"
+                    rx="11"
+                    ry="11"
+                    fill="none"
+                    stroke="#F338C8"
+                    strokeWidth="3"
+                    className={`map-marker-pulse pointer-events-none ${active || hovered ? 'is-active' : ''}`}
+                    style={{ animationDelay: `${index * 280}ms` }}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <circle
+                    cx={pos.x}
+                    cy={pos.y}
+                    r={isSanctuary ? 27 : 24}
+                    fill="none"
+                    stroke={isHockney ? '#47B8D2' : isSanctuary ? palette.accent : '#7FA06E'}
+                    strokeWidth="2.5"
+                    className={`map-marker-pulse pointer-events-none ${active || hovered ? 'is-active' : ''}`}
+                    style={{ animationDelay: `${index * 280}ms` }}
+                    aria-hidden="true"
+                  />
+                )}
                 {isHockneySummer && (
                   <rect
                     x={pos.x - (active || hovered ? 25 : 21)}
