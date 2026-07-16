@@ -2003,3 +2003,284 @@ g:hover .hockney-summer-map-marker {
 .map-hover-card:hover {
   transform: none;
 }
+
+/* Homepage base archive: familiar cards on small screens, editorial photo grid on desktop. */
+.base-archive-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.base-archive-image {
+  position: relative;
+  overflow: hidden;
+}
+
+.base-archive-image-shade {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .base-archive-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.15rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .base-archive-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-flow: dense;
+    grid-auto-rows: 214px;
+    gap: 1rem;
+  }
+
+  .base-archive-card {
+    position: relative;
+    grid-column: span 3;
+    min-height: 0;
+    padding: 0;
+    border-radius: 18px;
+    background: #243c32;
+    box-shadow: 0 10px 24px rgba(36, 60, 50, 0.1);
+    isolation: isolate;
+    transition:
+      transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 220ms ease,
+      box-shadow 260ms ease;
+  }
+
+  .base-archive-card:nth-child(1) {
+    grid-column: span 7;
+    grid-row: span 2;
+  }
+
+  .base-archive-card:nth-child(2),
+  .base-archive-card:nth-child(3) {
+    grid-column: span 5;
+  }
+
+  .base-archive-card:hover,
+  .base-archive-card:focus-visible {
+    border-color: rgba(127, 160, 110, 0.72);
+    background: #243c32;
+    box-shadow: 0 16px 34px rgba(36, 60, 50, 0.18);
+    transform: translateY(-3px);
+  }
+
+  .base-archive-card > .sanctuary-card-strip {
+    display: none;
+  }
+
+  .base-archive-image,
+  .base-archive-card.hockney-summer-note-card .base-archive-image,
+  .base-archive-card .hockney-note-image-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+  }
+
+  .base-archive-image img {
+    transform: scale(1.002);
+    transition: transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1), filter 260ms ease;
+  }
+
+  .base-archive-card:hover .base-archive-image img,
+  .base-archive-card:focus-visible .base-archive-image img {
+    transform: scale(1.055);
+  }
+
+  .base-archive-image-shade {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    display: block;
+    background:
+      linear-gradient(180deg, rgba(20, 38, 31, 0.03) 20%, rgba(20, 38, 31, 0.2) 55%, rgba(20, 38, 31, 0.9) 100%);
+    pointer-events: none;
+  }
+
+  .base-archive-copy,
+  .base-archive-card.hockney-summer-note-card > .base-archive-copy {
+    position: absolute;
+    z-index: 3;
+    inset: auto 0 0;
+    display: flex;
+    min-height: 48%;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1.15rem 1.2rem 1rem;
+    background: transparent;
+  }
+
+  .base-archive-card:nth-child(1) .base-archive-copy {
+    padding: 1.75rem 1.85rem 1.55rem;
+  }
+
+  .base-archive-card .base-archive-heading,
+  .base-archive-card .base-archive-heading span,
+  .base-archive-card .base-archive-date,
+  .base-archive-card .base-archive-summary,
+  .base-archive-card .base-archive-arrow {
+    color: #fffdf4 !important;
+  }
+
+  .base-archive-heading {
+    width: 100%;
+    font-size: 1.2rem;
+    line-height: 1.25;
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.34);
+  }
+
+  .base-archive-card:nth-child(1) .base-archive-heading {
+    font-size: 2rem;
+  }
+
+  .base-archive-index {
+    align-self: baseline;
+    opacity: 0.72;
+    letter-spacing: 0.12em;
+  }
+
+  .base-archive-arrow {
+    flex: none;
+    opacity: 0;
+    transform: translate(-5px, 5px);
+    transition: opacity 220ms ease, transform 220ms ease;
+  }
+
+  .base-archive-card:hover .base-archive-arrow,
+  .base-archive-card:focus-visible .base-archive-arrow {
+    opacity: 0.9;
+    transform: translate(0, 0);
+  }
+
+  .base-archive-summary {
+    max-height: 0;
+    margin-top: 0;
+    overflow: hidden;
+    opacity: 0;
+    line-height: 1.55;
+    transform: translateY(7px);
+    transition:
+      max-height 320ms ease,
+      margin-top 260ms ease,
+      opacity 220ms ease,
+      transform 280ms ease;
+  }
+
+  .base-archive-card:hover .base-archive-summary,
+  .base-archive-card:focus-visible .base-archive-summary {
+    max-height: 5rem;
+    margin-top: 0.55rem;
+    opacity: 0.88;
+    transform: translateY(0);
+  }
+
+  .base-archive-date {
+    margin-top: 0.55rem;
+    opacity: 0.76;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  .base-archive-card.hockney-card {
+    border-color: rgba(43, 153, 184, 0.55);
+    background: #0d7192;
+    box-shadow: 0 13px 30px rgba(13, 113, 146, 0.16);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .base-archive-card.hockney-card .base-archive-image-shade {
+    background: linear-gradient(180deg, rgba(2, 57, 76, 0.02) 18%, rgba(2, 57, 76, 0.24) 58%, rgba(4, 67, 88, 0.94) 100%);
+  }
+
+  .base-archive-card.sanctuary-card {
+    border-color: color-mix(in srgb, var(--sanctuary-accent, #8f8066) 54%, transparent);
+    background: var(--sanctuary-accent, #8f8066);
+  }
+
+  .base-archive-card.sanctuary-card .base-archive-image-shade {
+    background: linear-gradient(180deg, transparent 18%, rgba(42, 35, 27, 0.18) 56%, color-mix(in srgb, var(--sanctuary-accent, #685b45) 72%, #28231d) 100%);
+  }
+
+  .base-archive-card.hockney-summer-note-card {
+    padding: 0;
+    border: 3px solid #0057d9;
+    border-radius: 0;
+    background: #16a9d8;
+    box-shadow: 7px 7px 0 rgba(243, 56, 200, 0.42);
+    transform: none;
+  }
+
+  .base-archive-card.hockney-summer-note-card:hover,
+  .base-archive-card.hockney-summer-note-card:focus-visible {
+    background: #16a9d8;
+    box-shadow: 10px 10px 0 #f338c8;
+    transform: translate(-3px, -3px);
+  }
+
+  .base-archive-card.hockney-summer-note-card .base-archive-image-shade {
+    background: linear-gradient(
+      180deg,
+      transparent 48%,
+      rgba(15, 39, 55, 0.04) 60%,
+      rgba(15, 39, 55, 0.28) 78%,
+      rgba(15, 39, 55, 0.72) 100%
+    );
+  }
+
+  .base-archive-card.hockney-summer-note-card .base-archive-index,
+  .base-archive-card.hockney-summer-note-card .base-archive-date {
+    color: #fff8a6 !important;
+  }
+
+  .hockney-summer-notes-section .base-archive-grid {
+    column-gap: 1.25rem;
+    row-gap: 1.4rem;
+  }
+
+  .hockney-summer-notes-section .base-archive-card:nth-child(1) {
+    transform: translateY(2px) rotate(-0.55deg);
+  }
+
+  .hockney-summer-notes-section .base-archive-card:nth-child(2) {
+    transform: translateY(-3px) rotate(0.75deg);
+  }
+
+  .hockney-summer-notes-section .base-archive-card:nth-child(3) {
+    transform: translateY(4px) rotate(-0.7deg);
+  }
+
+  .hockney-summer-notes-section .base-archive-card:nth-child(4) {
+    transform: translateY(3px) rotate(-1.15deg);
+  }
+
+  .hockney-summer-notes-section .base-archive-card:nth-child(5) {
+    transform: translateY(-5px) rotate(1.05deg);
+  }
+
+  .hockney-summer-notes-section .base-archive-card:nth-child(6) {
+    transform: translateY(6px) rotate(-0.65deg);
+  }
+
+  .hockney-summer-notes-section .base-archive-card:nth-child(7) {
+    transform: translateY(-2px) rotate(0.9deg);
+  }
+
+  .hockney-summer-notes-section .base-archive-card:hover,
+  .hockney-summer-notes-section .base-archive-card:focus-visible {
+    transform: translate(-3px, -3px) rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .base-archive-card,
+  .base-archive-image img,
+  .base-archive-summary,
+  .base-archive-arrow {
+    transition: none;
+  }
+}

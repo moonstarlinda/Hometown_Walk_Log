@@ -6,6 +6,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
+  ArrowUpRight,
   ArrowUp,
   BarChart3,
   BookOpen,
@@ -606,6 +607,16 @@ export default function App() {
     return latest;
   }, [bases, sortedLogs]);
 
+  const homeArchiveLocations = useMemo(
+    () =>
+      [...bases, ROADSIDE_LOCATION].sort((left, right) => {
+        const leftDate = latestLogPerBase[left.id]?.date ?? '';
+        const rightDate = latestLogPerBase[right.id]?.date ?? '';
+        return rightDate.localeCompare(leftDate);
+      }),
+    [bases, latestLogPerBase]
+  );
+
   const filteredLogs = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -1142,11 +1153,12 @@ export default function App() {
                 description="从河岸、松林到山间长椅，每张卡片通向一处持续观察的地方。"
               />
 
-              <div className={isHockneySummer ? 'hockney-summer-notes-grid' : 'grid gap-4 md:grid-cols-2 lg:grid-cols-3'}>
-                {bases.map((base) => (
+              <div className="base-archive-grid">
+                {homeArchiveLocations.map((base) => (
                   <BaseNoteCard
                     key={base.id}
                     base={base}
+                    archiveLabel={base.title.match(/^(\d+)/)?.[1] ?? '途'}
                     latestLog={latestLogPerBase[base.id]}
                     onClick={() => setSelectedBaseId(base.id)}
                     isHockney={isHockney}
@@ -1155,15 +1167,6 @@ export default function App() {
                     palette={sanctuaryPaletteForBase(base)}
                   />
                 ))}
-                <BaseNoteCard
-                  base={ROADSIDE_LOCATION}
-                  latestLog={latestLogPerBase[ROADSIDE_LOCATION_ID]}
-                  onClick={() => setSelectedBaseId(ROADSIDE_LOCATION_ID)}
-                  isHockney={isHockney}
-                  isHockneySummer={isHockneySummer}
-                  isSanctuary={isSanctuary}
-                  palette={sanctuaryPaletteForBase(ROADSIDE_LOCATION)}
-                />
               </div>
             </section>
 
@@ -1816,24 +1819,26 @@ const MobileAuthorTools: React.FC<AuthorToolProps> = ({
 
 const BaseNoteCard: React.FC<{
   base: Base;
+  archiveLabel: string;
   latestLog?: WalkLog;
   onClick: () => void;
   isHockney?: boolean;
   isHockneySummer?: boolean;
   isSanctuary?: boolean;
   palette?: BasePalette;
-}> = ({ base, latestLog, onClick, isHockney = false, isHockneySummer = false, isSanctuary = false, palette }) => {
+}> = ({ base, archiveLabel, latestLog, onClick, isHockney = false, isHockneySummer = false, isSanctuary = false, palette }) => {
   const cardImage = latestLog?.photos?.filter(Boolean)[0] ?? base.coverImage;
   const summary = latestLog?.content
     ? `“${shortText(latestLog.content, 42)}”`
     : shortText(base.description, 48);
   const accent = palette?.accent ?? '#2F5D4A';
+  const displayTitle = base.title.replace(/^\d+号基地\s*[·・]\s*/, '');
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group flex h-full w-full flex-col overflow-hidden rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] text-left shadow-sm shadow-emerald-950/5 transition-colors hover:border-[#BFD1B8] hover:bg-[#F9FAF2] ${
+      className={`base-archive-card group flex h-full w-full flex-col overflow-hidden rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] text-left shadow-sm shadow-emerald-950/5 transition-colors hover:border-[#BFD1B8] hover:bg-[#F9FAF2] ${
         isHockneySummer ? 'hockney-summer-note-card' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
       }`}
       style={
@@ -1853,7 +1858,7 @@ const BaseNoteCard: React.FC<{
         />
       )}
       <span
-        className={`block h-40 w-full flex-none ${
+        className={`base-archive-image block h-40 w-full flex-none ${
           isHockneySummer ? 'hockney-summer-note-image' : isHockney ? 'hockney-image-frame hockney-note-image-frame' : isSanctuary ? 'sanctuary-image-frame' : ''
         }`}
       >
@@ -1863,10 +1868,11 @@ const BaseNoteCard: React.FC<{
           referrerPolicy="no-referrer"
           className="block h-full w-full object-cover object-center align-top transition-transform duration-500 group-hover:scale-[1.03]"
         />
+        <span aria-hidden="true" className="base-archive-image-shade" />
       </span>
-      <span className="block p-4">
+      <span className="base-archive-copy block p-4">
         <span
-          className="flex items-center gap-2 font-serif text-lg font-semibold text-[#243C32]"
+          className="base-archive-heading flex items-center gap-2 font-serif text-lg font-semibold text-[#243C32]"
           style={isSanctuary ? { color: accent } : undefined}
         >
           {isSanctuary && (
@@ -1876,14 +1882,19 @@ const BaseNoteCard: React.FC<{
               style={{ backgroundColor: accent }}
             />
           )}
-          {base.title}
+          <span className="base-archive-index hidden font-mono text-xs lg:inline">
+            {archiveLabel}
+          </span>
+          <span className="lg:hidden">{base.title}</span>
+          <span className="hidden lg:inline">{displayTitle}</span>
+          <ArrowUpRight className="base-archive-arrow ml-auto hidden h-4 w-4 lg:block" aria-hidden="true" />
         </span>
-        <span className="mt-2 block text-sm leading-6 text-[#66745E]">
+        <span className="base-archive-summary mt-2 block text-sm leading-6 text-[#66745E]">
           {summary}
         </span>
         {latestLog && (
           <span
-            className="mt-3 block text-xs text-[#7D8C74]"
+            className="base-archive-date mt-3 block text-xs text-[#7D8C74]"
             style={isSanctuary ? { color: accent } : undefined}
           >
             最近访问：{formatDate(latestLog.date)}
