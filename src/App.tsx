@@ -635,6 +635,44 @@ export default function App() {
     });
   }, [filterBaseId, filterDate, filterWeather, searchQuery, sortedLogs]);
 
+  const timelineArchive = useMemo(() => {
+    return {
+      firstDate: sortedLogs.at(-1)?.date ?? '',
+      latestDate: sortedLogs[0]?.date ?? ''
+    };
+  }, [sortedLogs]);
+
+  const groupedFilteredLogs = useMemo(() => {
+    const groups: Array<{ month: string; logs: WalkLog[] }> = [];
+
+    filteredLogs.forEach((log) => {
+      const month = log.date.slice(0, 7);
+      const currentGroup = groups.at(-1);
+
+      if (currentGroup?.month === month) {
+        currentGroup.logs.push(log);
+      } else {
+        groups.push({ month, logs: [log] });
+      }
+    });
+
+    return groups;
+  }, [filteredLogs]);
+
+  const activeTimelineFilterCount = [
+    Boolean(searchQuery.trim()),
+    Boolean(filterDate),
+    filterBaseId !== 'all',
+    filterWeather !== 'all'
+  ].filter(Boolean).length;
+
+  const clearTimelineFilters = () => {
+    setSearchQuery('');
+    setFilterDate('');
+    setFilterBaseId('all');
+    setFilterWeather('all');
+  };
+
   const editingLog =
     activeLogEditor?.mode === 'edit'
       ? logs.find((log) => log.id === activeLogEditor.logId) ?? null
@@ -1200,12 +1238,50 @@ export default function App() {
         )}
 
         {activeTab === 'timeline' && (
-          <section className={isHockneySummer ? 'hockney-summer-page space-y-5' : 'space-y-5'}>
-            <div
-              className={`timeline-filter-panel rounded-xl border border-[#DDE5D6] bg-[#FFFDF7]/90 p-3 shadow-sm shadow-emerald-950/5 backdrop-blur ${
+          <section className={`timeline-archive space-y-6 ${isHockneySummer ? 'hockney-summer-page' : ''}`}>
+            <section
+              className={`timeline-archive-hero relative overflow-hidden rounded-2xl border border-[#D8E0D1] bg-[#F4F1E5] px-5 py-7 shadow-sm shadow-emerald-950/5 sm:px-8 sm:py-8 ${
                 isHockneySummer ? 'hockney-summer-panel' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
               }`}
             >
+              <div className="timeline-archive-hero-copy relative z-10 max-w-xl">
+                <div className="timeline-archive-kicker inline-flex w-fit items-center gap-1.5 rounded-full border border-[#CED9C5] bg-white/55 px-3 py-1.5 text-xs text-[#667A5E]">
+                  <BookOpen className="h-3.5 w-3.5" /> 沿日期翻阅
+                </div>
+                <h1 className="timeline-archive-title mt-4 font-serif text-3xl font-semibold tracking-tight text-[#243C32] sm:text-4xl">
+                  散步日志
+                </h1>
+                <p className="timeline-archive-description mt-3 max-w-lg text-sm leading-7 text-[#65735F] sm:text-base">
+                  沿着日期翻阅走过的路。天气、草木与偶然停下来的时刻，都留在这些手记里。
+                </p>
+                {timelineArchive.firstDate && (
+                  <p className="timeline-archive-period mt-5 font-mono text-[11px] tracking-[0.08em] text-[#73806E]">
+                    {formatDate(timelineArchive.firstDate)} — {formatDate(timelineArchive.latestDate)} · 家乡散步手记
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <div
+              className={`timeline-filter-panel rounded-xl border border-[#DDE5D6] bg-[#FFFDF7]/90 p-3 shadow-sm shadow-emerald-950/5 backdrop-blur sm:p-4 ${
+                isHockneySummer ? 'hockney-summer-panel' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
+              }`}
+            >
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-0.5">
+                <div>
+                  <h2 className="font-serif text-base font-semibold text-[#304438]">检索档案</h2>
+                  <p className="mt-0.5 text-[11px] text-[#82907D]">按文字、日期、地点或天气缩小范围</p>
+                </div>
+                {activeTimelineFilterCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearTimelineFilters}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-[#D3DECD] bg-[#F4F7EF] px-3 py-1.5 text-xs font-medium text-[#557052] transition-colors hover:bg-[#E8F0E2]"
+                  >
+                    <X className="h-3.5 w-3.5" /> 清除 {activeTimelineFilterCount} 项筛选
+                  </button>
+                )}
+              </div>
               <div className="grid min-w-0 grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-[minmax(260px,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
                 <label className="group relative min-w-0">
                   <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A987E] transition-colors group-focus-within:text-[#2F5D4A]" />
@@ -1286,46 +1362,83 @@ export default function App() {
               </div>
             </div>
 
-            <div className={`flex items-center gap-2 text-xs text-[#6B7E65] ${isHockneySummer ? 'hockney-summer-filter-count' : ''}`}>
-              <Filter className="h-4 w-4" />
-              找到 {filteredLogs.length} 条记录
+            <div className={`flex items-center justify-between gap-3 text-xs text-[#6B7E65] ${isHockneySummer ? 'hockney-summer-filter-count' : ''}`}>
+              <span className="flex items-center gap-2"><Filter className="h-4 w-4" />找到 {filteredLogs.length} 条记录</span>
+              {filteredLogs.length !== sortedLogs.length && <span>共 {sortedLogs.length} 篇</span>}
             </div>
 
-            <div className="space-y-3">
-              {filteredLogs.map((log) => {
-                const base =
-                  log.baseId === ROADSIDE_LOCATION_ID
-                    ? ROADSIDE_LOCATION
-                    : bases.find((item) => item.id === log.baseId);
-                return (
-                  <LogCard
-                    key={log.id}
-                    log={log}
-                    base={base}
-                    getWeatherIcon={getWeatherIcon}
-                    isEditing={isEditing}
-                    isSelected={selectedLogIds.includes(log.id)}
-                    isHockney={isHockney}
-                    isHockneySummer={isHockneySummer}
-                    isSanctuary={isSanctuary}
-                    palette={sanctuaryPaletteForBase(base ?? log.baseId)}
-                    onOpenBase={() => {
-                      setSelectedBaseId(log.baseId);
-                      setActiveTab('bases');
-                    }}
-                    onEdit={() => openEditLog(log.id)}
-                    onDelete={() => handleDeleteLog(log.id)}
-                    onToggleSelection={() =>
-                      setSelectedLogIds((currentIds) =>
-                        currentIds.includes(log.id)
-                          ? currentIds.filter((id) => id !== log.id)
-                          : [...currentIds, log.id]
-                      )
-                    }
-                  />
-                );
-              })}
-            </div>
+            {groupedFilteredLogs.length > 0 ? (
+              <div className="timeline-months space-y-9">
+                {groupedFilteredLogs.map((group) => (
+                  <section key={group.month} className="timeline-month-group">
+                    <header className="timeline-month-heading mb-4 flex items-end gap-3">
+                      <div>
+                        <p className="font-mono text-[10px] tracking-[0.18em] text-[#899584]">ARCHIVE</p>
+                        <h2 className="mt-1 font-serif text-xl font-semibold text-[#2B4336] sm:text-2xl">{formatTimelineMonth(group.month)}</h2>
+                      </div>
+                      <span className="mb-1 text-xs text-[#81907C]">{group.logs.length} 篇</span>
+                      <span aria-hidden="true" className="mb-2 h-px flex-1 bg-[#D9E1D4]" />
+                    </header>
+
+                    <div className="timeline-month-entries space-y-4">
+                      {group.logs.map((log) => {
+                        const base =
+                          log.baseId === ROADSIDE_LOCATION_ID
+                            ? ROADSIDE_LOCATION
+                            : bases.find((item) => item.id === log.baseId);
+                        const timelineDay = formatTimelineDay(log.date);
+
+                        return (
+                          <div key={log.id} className="timeline-entry md:grid md:grid-cols-[4.5rem_minmax(0,1fr)] md:gap-5">
+                            <div className="timeline-entry-date relative hidden pt-3 text-right md:block" aria-label={`日期 ${formatDate(log.date)}`}>
+                              <span aria-hidden="true" className="block font-serif text-2xl font-semibold leading-none text-[#365746]">{timelineDay.day}</span>
+                              <span aria-hidden="true" className="mt-1 block text-[10px] text-[#879383]">{timelineDay.weekday}</span>
+                              <span aria-hidden="true" className="timeline-entry-dot absolute -right-[0.95rem] top-5 h-2.5 w-2.5 rounded-full border-2 border-[#F7F5EC] bg-[#6F916D] shadow-[0_0_0_1px_#AFC1AA]" />
+                            </div>
+                            <LogCard
+                              log={log}
+                              base={base}
+                              variant="timeline"
+                              getWeatherIcon={getWeatherIcon}
+                              isEditing={isEditing}
+                              isSelected={selectedLogIds.includes(log.id)}
+                              isHockney={isHockney}
+                              isHockneySummer={isHockneySummer}
+                              isSanctuary={isSanctuary}
+                              palette={sanctuaryPaletteForBase(base ?? log.baseId)}
+                              onOpenBase={() => {
+                                setSelectedBaseId(log.baseId);
+                                setActiveTab('bases');
+                              }}
+                              onEdit={() => openEditLog(log.id)}
+                              onDelete={() => handleDeleteLog(log.id)}
+                              onToggleSelection={() =>
+                                setSelectedLogIds((currentIds) =>
+                                  currentIds.includes(log.id)
+                                    ? currentIds.filter((id) => id !== log.id)
+                                    : [...currentIds, log.id]
+                                )
+                              }
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            ) : (
+              <div className={`rounded-2xl border border-dashed border-[#CCD8C7] bg-[#FFFDF7]/65 px-6 py-14 text-center ${isHockneySummer ? 'hockney-summer-panel' : ''}`}>
+                <Search className="mx-auto h-7 w-7 text-[#91A08C]" />
+                <h2 className="mt-3 font-serif text-lg font-semibold text-[#344A3C]">没有找到相符的日志</h2>
+                <p className="mt-1 text-sm text-[#758271]">换一个关键词，或者清除当前筛选条件。</p>
+                {activeTimelineFilterCount > 0 && (
+                  <button type="button" onClick={clearTimelineFilters} className="mt-5 rounded-full bg-[#2F5D4A] px-4 py-2 text-xs font-semibold text-[#FFFDF4]">
+                    查看全部日志
+                  </button>
+                )}
+              </div>
+            )}
           </section>
         )}
 
@@ -1581,6 +1694,21 @@ const AuthorLoginModal: React.FC<{
 
 function formatDate(date: string) {
   return date.replace(/-/g, '.');
+}
+
+function formatTimelineMonth(month: string) {
+  const [year, monthNumber] = month.split('-');
+  return `${year} 年 ${Number(monthNumber)} 月`;
+}
+
+function formatTimelineDay(date: string) {
+  const [, , day] = date.split('-');
+  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+  const weekdayIndex = new Date(`${date}T00:00:00`).getDay();
+  return {
+    day: Number(day),
+    weekday: weekdays[weekdayIndex]
+  };
 }
 
 function baseName(base?: Base | null) {
@@ -2139,6 +2267,7 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
 interface LogCardProps {
   log: WalkLog;
   base?: Base;
+  variant?: 'default' | 'timeline';
   getWeatherIcon: (weather: string) => React.ReactNode;
   isEditing: boolean;
   isHockney?: boolean;
@@ -2155,6 +2284,7 @@ interface LogCardProps {
 const LogCard: React.FC<LogCardProps> = ({
   log,
   base,
+  variant = 'default',
   getWeatherIcon,
   isEditing,
   isHockney = false,
@@ -2190,7 +2320,7 @@ const LogCard: React.FC<LogCardProps> = ({
   return (
     <div className="relative" ref={actionsRef}>
       <article
-        className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-4 pr-12 shadow-sm shadow-emerald-950/5 xl:pr-4 ${
+        className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-4 pr-12 shadow-sm shadow-emerald-950/5 xl:pr-4 ${variant === 'timeline' ? 'timeline-log-card' : ''} ${
           isHockneySummer ? 'hockney-summer-log-card' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-log-card' : ''
         }`}
         style={
@@ -2205,7 +2335,7 @@ const LogCard: React.FC<LogCardProps> = ({
       >
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="flex flex-wrap items-center gap-2 text-xs text-[#6B7E65]">
-          <span className={`inline-flex items-center gap-1 rounded-md bg-[#EEF4E8] px-2 py-1 font-mono text-[#5B7055] ${isHockneySummer ? 'hockney-summer-chip' : ''}`}>
+          <span className={`timeline-card-date-chip inline-flex items-center gap-1 rounded-md bg-[#EEF4E8] px-2 py-1 font-mono text-[#5B7055] ${isHockneySummer ? 'hockney-summer-chip' : ''}`}>
             <Calendar className="h-3.5 w-3.5" />
             {formatDate(log.date)}
           </span>

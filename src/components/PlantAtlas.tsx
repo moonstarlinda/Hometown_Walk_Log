@@ -43,7 +43,7 @@ export default function PlantAtlas({ isHockney, isHockneySummer, isSanctuary }: 
       }`}>
         <div
           aria-hidden="true"
-          className="plant-atlas-artwork pointer-events-none absolute inset-0 hidden select-none sm:block"
+          className="plant-atlas-artwork pointer-events-none absolute inset-0 block select-none"
         />
         <div className="relative z-10 flex max-w-xl flex-col justify-center sm:max-w-[58%] lg:max-w-[46%]">
             <div className="plant-atlas-kicker mb-4 inline-flex w-fit max-w-max self-start items-center gap-1.5 whitespace-nowrap rounded-full border border-[#CED9C5] bg-white/55 px-2.5 py-1 text-xs text-[#667A5E] lg:mb-3">

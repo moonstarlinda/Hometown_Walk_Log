@@ -59,14 +59,57 @@ textarea {
 .plant-atlas-artwork {
   opacity: 1;
   filter: none;
-  background-position: center;
+  background-image: url('/images/plants/plant-atlas-pine-hero.jpg');
+  background-position: center right;
   background-size: cover;
   background-repeat: no-repeat;
 }
 
-@media (min-width: 640px) {
+.plant-atlas-artwork::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(250, 248, 239, 0.16);
+}
+
+.plant-atlas-hero.hockney-card .plant-atlas-artwork::after {
+  background: rgba(232, 250, 255, 0.16);
+}
+
+.sanctuary-plant-atlas .plant-atlas-artwork::after {
+  background: rgba(255, 249, 236, 0.16);
+}
+
+@media (max-width: 639px) {
   .plant-atlas-artwork {
-    background-image: url('/images/plants/pinus_tabuliformis_hero.png');
+    background-position: 76% center;
+  }
+
+  .plant-atlas-artwork::after {
+    background: linear-gradient(
+      90deg,
+      rgba(250, 248, 239, 0.94) 0%,
+      rgba(250, 248, 239, 0.82) 52%,
+      rgba(250, 248, 239, 0.48) 100%
+    );
+  }
+
+  .plant-atlas-hero.hockney-card .plant-atlas-artwork::after {
+    background: linear-gradient(
+      90deg,
+      rgba(232, 250, 255, 0.94) 0%,
+      rgba(232, 250, 255, 0.82) 52%,
+      rgba(232, 250, 255, 0.48) 100%
+    );
+  }
+
+  .sanctuary-plant-atlas .plant-atlas-artwork::after {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 249, 236, 0.94) 0%,
+      rgba(255, 249, 236, 0.82) 52%,
+      rgba(255, 249, 236, 0.48) 100%
+    );
   }
 }
 
@@ -153,20 +196,20 @@ textarea {
 }
 
 .sanctuary-plant-atlas .plant-atlas-artwork {
-  opacity: 0.76;
-  filter: sepia(0.12) saturate(0.78) hue-rotate(330deg) contrast(0.9) brightness(1.06);
+  opacity: 0.82;
+  filter: sepia(0.14) saturate(0.76) hue-rotate(330deg) contrast(0.9) brightness(1.06);
   mix-blend-mode: multiply;
 }
 
 .plant-atlas-hero.hockney-card .plant-atlas-artwork {
-  opacity: 0.66;
+  opacity: 0.74;
   filter:
-    grayscale(0.86)
-    sepia(0.18)
-    saturate(1.12)
+    grayscale(0.62)
+    sepia(0.14)
+    saturate(0.9)
     hue-rotate(118deg)
-    contrast(1.08)
-    brightness(0.98);
+    contrast(0.94)
+    brightness(1.06);
   mix-blend-mode: multiply;
 }
 
@@ -429,6 +472,261 @@ textarea {
 
 .timeline-filter-date::-webkit-calendar-picker-indicator {
   margin: 0;
+}
+
+.timeline-archive-hero {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 88% 22%, rgba(119, 153, 108, 0.18) 0 5.5rem, transparent 5.6rem),
+    linear-gradient(135deg, #f7f4e8 0%, #eef2e5 100%);
+}
+
+.timeline-archive-hero::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  right: 2.5rem;
+  bottom: -4.25rem;
+  width: 12rem;
+  height: 12rem;
+  border: 1px solid rgba(91, 119, 82, 0.18);
+  border-radius: 48% 52% 44% 56%;
+  transform: rotate(-18deg);
+}
+
+.default-root .timeline-archive-hero {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(247, 244, 232, 0.98) 0%,
+      rgba(247, 244, 232, 0.94) 34%,
+      rgba(247, 244, 232, 0.7) 58%,
+      rgba(247, 244, 232, 0.2) 100%
+    ),
+    linear-gradient(rgba(244, 247, 237, 0.16), rgba(244, 247, 237, 0.16)),
+    url('/images/field-journal-river-hero.jpg') center 62% / cover no-repeat;
+}
+
+.default-root .timeline-archive-hero::after {
+  content: none;
+}
+
+.hockney-root .timeline-archive-kicker {
+  border-color: rgba(31, 156, 193, 0.34);
+  background: rgba(255, 255, 255, 0.58);
+  color: #0d7192;
+}
+
+.hockney-root .timeline-archive-hero {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(232, 250, 255, 0.98) 0%,
+      rgba(232, 250, 255, 0.94) 34%,
+      rgba(232, 250, 255, 0.7) 58%,
+      rgba(232, 250, 255, 0.2) 100%
+    ),
+    linear-gradient(rgba(223, 247, 255, 0.12), rgba(223, 247, 255, 0.12)),
+    url('/images/field-journal-river-hero.jpg') center 62% / cover no-repeat;
+}
+
+.sanctuary-root .timeline-archive-hero {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 249, 236, 0.98) 0%,
+      rgba(255, 249, 236, 0.94) 34%,
+      rgba(255, 249, 236, 0.7) 58%,
+      rgba(255, 249, 236, 0.2) 100%
+    ),
+    linear-gradient(rgba(247, 240, 222, 0.14), rgba(247, 240, 222, 0.14)),
+    url('/images/field-journal-river-hero.jpg') center 62% / cover no-repeat;
+}
+
+.sanctuary-root .timeline-archive-kicker {
+  border-color: rgba(122, 92, 140, 0.3);
+  background: rgba(255, 250, 240, 0.68);
+  color: #7a5c8c;
+}
+
+.hockney-root .timeline-archive-hero::after,
+.sanctuary-root .timeline-archive-hero::after {
+  content: none;
+}
+
+.timeline-month-entries {
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .timeline-month-entries::before {
+    content: "";
+    position: absolute;
+    left: 5.125rem;
+    top: 1.45rem;
+    bottom: 1.45rem;
+    width: 1px;
+    background: linear-gradient(to bottom, #b9c9b4, #dce4d8 86%, transparent);
+  }
+
+  .timeline-log-card .timeline-card-date-chip {
+    display: none;
+  }
+}
+
+.timeline-log-card {
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.timeline-log-card:hover {
+  border-color: #c8d6c3;
+  box-shadow: 0 12px 30px rgba(40, 69, 52, 0.08);
+  transform: translateY(-1px);
+}
+
+.hockney-summer-page .timeline-archive-hero {
+  background: #fff8a6;
+}
+
+.hockney-summer-page .timeline-archive-hero::before,
+.hockney-summer-page .timeline-archive-hero::after {
+  content: "";
+  position: absolute;
+  display: none;
+  z-index: 0;
+  pointer-events: none;
+  border: 0;
+  border-radius: 50%;
+}
+
+.hockney-summer-page .timeline-archive-hero::before {
+  left: -15%;
+  bottom: -108%;
+  width: 43%;
+  height: 154%;
+  background: #20a8d8;
+  opacity: 0.84;
+  transform: rotate(10deg);
+}
+
+.hockney-summer-page .timeline-archive-hero::after {
+  top: -78%;
+  right: -10%;
+  width: 46%;
+  height: 146%;
+  background: #ff77ae;
+  opacity: 0.88;
+  transform: rotate(-8deg);
+  mix-blend-mode: normal;
+}
+
+@media (min-width: 640px) {
+  .hockney-summer-page .timeline-archive-hero::before,
+  .hockney-summer-page .timeline-archive-hero::after {
+    display: block;
+  }
+}
+
+.hockney-summer-page .timeline-archive-kicker,
+.hockney-summer-page .timeline-archive-title,
+.hockney-summer-page .timeline-archive-description,
+.hockney-summer-page .timeline-archive-period,
+.hockney-summer-page .timeline-month-heading h2,
+.hockney-summer-page .timeline-month-heading p,
+.hockney-summer-page .timeline-month-heading span {
+  color: #0057d9;
+}
+
+.hockney-summer-page .timeline-archive-title {
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+.hockney-summer-page .timeline-archive-description {
+  color: rgba(0, 87, 217, 0.84);
+  font-weight: 700;
+}
+
+.hockney-summer-page .timeline-archive-kicker,
+.hockney-summer-page .timeline-archive-period {
+  color: rgba(0, 87, 217, 0.76);
+  font-weight: 800;
+}
+
+.hockney-summer-page .timeline-archive-kicker {
+  border: 2px solid #0057d9;
+  border-radius: 0;
+  background: #fff22e;
+  color: #0057d9;
+  box-shadow: 3px 3px 0 rgba(243, 56, 200, 0.34);
+}
+
+.hockney-summer-page .timeline-filter-panel h2,
+.hockney-summer-page .timeline-month-heading h2,
+.hockney-summer-page .timeline-entry-date > span:first-child {
+  color: #0057d9;
+  font-weight: 900;
+}
+
+.hockney-summer-page .timeline-filter-panel > div:first-child p,
+.hockney-summer-page .timeline-entry-date > span:nth-child(2) {
+  color: rgba(0, 87, 217, 0.7);
+  font-weight: 700;
+}
+
+.hockney-summer-page .timeline-entry-dot {
+  border-radius: 0;
+  border-color: #fff22e;
+  background: #f338c8;
+  box-shadow: 0 0 0 2px #0057d9;
+}
+
+.hockney-summer-page .timeline-month-entries::before {
+  width: 3px;
+  background: #0057d9;
+}
+
+@media (max-width: 639px) {
+  .timeline-archive-hero::after {
+    right: -5rem;
+  }
+
+  .default-root .timeline-archive-hero {
+    background:
+      linear-gradient(
+        90deg,
+        rgba(247, 244, 232, 0.96) 0%,
+        rgba(247, 244, 232, 0.88) 48%,
+        rgba(247, 244, 232, 0.66) 100%
+      ),
+      linear-gradient(rgba(244, 247, 237, 0.12), rgba(244, 247, 237, 0.12)),
+      url('/images/field-journal-river-hero.jpg') 55% 64% / cover no-repeat;
+  }
+
+  .hockney-root .timeline-archive-hero {
+    background:
+      linear-gradient(
+        90deg,
+        rgba(232, 250, 255, 0.96) 0%,
+        rgba(232, 250, 255, 0.88) 48%,
+        rgba(232, 250, 255, 0.66) 100%
+      ),
+      linear-gradient(rgba(223, 247, 255, 0.1), rgba(223, 247, 255, 0.1)),
+      url('/images/field-journal-river-hero.jpg') 55% 64% / cover no-repeat;
+  }
+
+  .sanctuary-root .timeline-archive-hero {
+    background:
+      linear-gradient(
+        90deg,
+        rgba(255, 249, 236, 0.96) 0%,
+        rgba(255, 249, 236, 0.88) 48%,
+        rgba(255, 249, 236, 0.66) 100%
+      ),
+      linear-gradient(rgba(247, 240, 222, 0.1), rgba(247, 240, 222, 0.1)),
+      url('/images/field-journal-river-hero.jpg') 55% 64% / cover no-repeat;
+  }
+
 }
 
 @media (min-width: 640px) {
