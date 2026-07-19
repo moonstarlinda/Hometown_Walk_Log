@@ -103,7 +103,17 @@ export const PLANTS: Plant[] = [
    },
    { id: 33, name: '胡枝子', category: 'shrub', firstSeen: '2026.07.16',
     image: '/images/plants/lespedeza_bicolor.jpg'
+   },
+   {id: 34, name: '加拿大一枝黄花', category: 'herb', firstSeen: '2026.07.17',
+    image: '/images/plants/solidago_canadensis.jpg'
+   },
+   {id: 35, name:'毛水苏', category : 'herb', firstSeen: '2026.07.17',
+    image:'/images/plants/maoshuisu.jpg'
+   },
+   {id: 36, name: '白芷', category: 'herb', firstSeen: '2026.07.19',
+    image: '/images/plants/angelica_sinensis.jpg'
    }
+  
 ];
 
 const FILTERS: Array<{ id: 'all' | PlantCategory; label: string }> = [
