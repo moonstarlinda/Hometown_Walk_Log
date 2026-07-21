@@ -842,6 +842,20 @@ textarea {
   background: #b7c3b1;
 }
 
+.record-calendar-scroll {
+  scrollbar-color: rgba(95, 125, 88, 0.3) transparent;
+  scrollbar-width: thin;
+}
+
+.record-calendar-scroll::-webkit-scrollbar {
+  height: 3px;
+}
+
+.record-calendar-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(95, 125, 88, 0.3);
+}
+
 .base-rhythm-line {
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -884,11 +898,10 @@ textarea {
   bottom: -30%;
   width: 39%;
   height: 88%;
-  border-radius: 0;
-  background: linear-gradient(135deg, #0057d9 0 11%, #ff77ae 11% 100%);
-  clip-path: polygon(17% 0, 100% 13%, 100% 100%, 0 100%);
-  transform: rotate(-4deg);
-  transform-origin: right bottom;
+  border-radius: 42% 14% 38% 20%;
+  background: #ff77ae;
+  transform: rotate(12deg);
+  transform-origin: center;
   mix-blend-mode: normal;
 }
 
@@ -3306,4 +3319,121 @@ g:hover .hockney-summer-map-marker {
   color: #0057d9;
   box-shadow: 3px 3px 0 rgba(243, 56, 200, 0.34);
   font-weight: 800;
+}
+
+.motif-summary-item {
+  border-top: 1px solid #e2e6dc;
+}
+
+.motif-summary-item:first-child {
+  border-top: 0;
+}
+
+.motif-summary-panorama {
+  aspect-ratio: 1316 / 428;
+  border: 1px solid rgba(95, 125, 88, 0.18);
+  border-radius: 0.75rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 62%),
+    #f4f3e9;
+  color: #789071;
+}
+
+.motif-summary-panorama::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/images/summarize-background.png') center / cover no-repeat;
+  mix-blend-mode: multiply;
+}
+
+@media (min-width: 640px) {
+  .motif-summary-item {
+    border-top: 0;
+    border-left: 1px solid #e2e6dc;
+  }
+
+  .motif-summary-item:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .motif-summary-item:nth-child(n + 3) {
+    border-top: 1px solid #e2e6dc;
+  }
+}
+
+@media (min-width: 1024px) {
+  .motif-summary-item,
+  .motif-summary-item:nth-child(n + 3) {
+    border-top: 0;
+  }
+
+  .motif-summary-item:nth-child(odd) {
+    border-left: 1px solid #e2e6dc;
+  }
+
+  .motif-summary-item:first-child {
+    border-left: 0;
+  }
+}
+
+.hockney-root .motif-summary-item {
+  border-color: rgba(31, 156, 193, 0.2);
+}
+
+.hockney-root .motif-summary-panorama {
+  border-color: rgba(31, 156, 193, 0.28);
+  background: rgba(223, 247, 255, 0.78);
+  color: #137fbe;
+}
+
+.hockney-root .motif-summary-card h4 {
+  color: #075f80;
+}
+
+.hockney-root .stats-closing-note h4 {
+  color: #075f80;
+}
+
+.sanctuary-root .motif-summary-item {
+  border-color: rgba(138, 122, 69, 0.2);
+}
+
+.sanctuary-root .motif-summary-panorama {
+  border-color: rgba(138, 122, 69, 0.24);
+  background:
+    linear-gradient(90deg, rgba(75, 163, 195, 0.07), rgba(78, 139, 91, 0.07), rgba(217, 140, 58, 0.07), rgba(122, 92, 140, 0.07)),
+    #fff9ec;
+  color: #7a5c8c;
+}
+
+.sanctuary-root .motif-summary-card h4 {
+  color: #4b4e6d;
+}
+
+.sanctuary-root .stats-closing-note h4 {
+  color: #7a5c8c;
+}
+
+.hockney-summer-page .motif-summary-item {
+  border-color: #0057d9;
+}
+
+.hockney-summer-page .motif-summary-panorama {
+  border: 2px solid #0057d9;
+  border-radius: 0;
+  background: #16a9d8;
+  color: #0057d9;
+  box-shadow: 3px 3px 0 rgba(243, 56, 200, 0.28);
+}
+
+.hockney-summer-page .motif-summary-panorama {
+  background:
+    linear-gradient(110deg, #16a9d8 0 24%, #fff22e 24% 50%, #14b85a 50% 73%, #f338c8 73% 100%);
+}
+
+.hockney-summer-page .motif-summary-card h4,
+.hockney-summer-page .stats-closing-note {
+  color: #0057d9;
+  font-weight: 900;
 }

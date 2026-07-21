@@ -16,6 +16,33 @@ interface NatureStatsProps {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const SEASON_MOTIFS = [
+  {
+    id: 'bench-belonging',
+    number: '01',
+    title: '长椅的归属',
+    summary: '它不断被占据、让出，又短暂地重新属于我。一次没有座位，也可能把路带向新的基地。'
+  },
+  {
+    id: 'sky-stage',
+    number: '02',
+    title: '天空的舞台',
+    summary: '云层从不同方向经过，时而分层，时而散场；没有云的时候，树冠接替了演出。'
+  },
+  {
+    id: 'river-time',
+    number: '03',
+    title: '河水的时间',
+    summary: '它从清澈走向浑浊，从退水走向上涨；沙洲的出现与消失，记录着这个夏天真正的刻度。'
+  },
+  {
+    id: 'presence-absence',
+    number: '04',
+    title: '出现与缺席',
+    summary: '鸭子、钓鱼人、鸟叫、云和风每天轮流到场。没有出现的事物，也构成了这一天的风景。'
+  }
+];
+
 function parseDate(date: string) {
   const [year, month, day] = date.split('-').map(Number);
   return new Date(year, month - 1, day);
@@ -367,16 +394,17 @@ export default function NatureStats({
           )}
         </div>
 
-        <div className="mb-5 md:hidden">
+        <div className="mb-4 flex items-center justify-between gap-3 md:hidden">
           <h2 className="flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
             <Calendar className="h-5 w-5 text-[#5F7D58]" />
             {archiveYear} 散步日历
           </h2>
+          {recordCalendarMonths.length > 1 && <span className="text-[10px] text-[#879181]">左右滑动查看</span>}
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:hidden">
+        <div className="record-calendar-scroll -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2 md:hidden">
           {recordCalendarMonths.length > 0 ? recordCalendarMonths.map((month) => (
-            <section key={month.key} className="record-calendar-month rounded-lg border border-[#E2E7DD] bg-[#FAF9F1] p-3 sm:p-4">
+            <section key={month.key} className="record-calendar-month w-[86%] shrink-0 snap-center rounded-lg border border-[#E2E7DD] bg-[#FAF9F1] p-3 sm:p-4">
               <h3 className="font-serif text-sm font-semibold text-[#304438]">{month.label}</h3>
               <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[9px] text-[#879181]" aria-hidden="true">
                 {['日', '一', '二', '三', '四', '五', '六'].map((weekday) => <span key={weekday}>{weekday}</span>)}
@@ -518,6 +546,52 @@ export default function NatureStats({
           </div>
         </section>
       </div>
+
+      <section
+        className={`motif-summary-card rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 sm:p-6 ${
+          isHockneySummer
+            ? 'hockney-summer-panel'
+            : isHockney
+              ? 'hockney-card'
+              : isSanctuary
+                ? 'sanctuary-card sanctuary-spectrum-card'
+                : ''
+        }`}
+      >
+        <div className="motif-summary-heading flex flex-wrap items-center justify-between gap-2">
+          <h3 className="flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
+            <span className={`rounded-md p-1 ${isHockneySummer ? 'hockney-summer-heading-icon' : isSanctuary ? 'bg-[color-mix(in_srgb,#D98C3A_12%,white)] text-[#D98C3A]' : 'bg-[#EEF4E8] text-[#2F5D4A]'}`}>
+              <Leaf className="h-4 w-4" />
+            </span>
+            这一季反复出现的事物
+          </h3>
+          <span className="text-[11px] text-[#879181]">从当前 {totalLogs} 篇日志中整理</span>
+        </div>
+
+        <div className="motif-summary-panorama relative mt-5 overflow-hidden" role="img" aria-label="树木、长椅、云层、河水、鸭子与远处钓鱼人的横向线稿" />
+
+        <div className="motif-summary-grid mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          {SEASON_MOTIFS.map((motif) => (
+            <article key={motif.id} className="motif-summary-item py-5 sm:px-4 lg:px-5">
+              <span className="motif-summary-number font-mono text-[9px] tracking-[0.14em] text-[#8A9685]">{motif.number}</span>
+              <h4 className="mt-1 font-serif text-base font-semibold text-[#304438]">{motif.title}</h4>
+              <p className="mt-1.5 text-xs leading-5 text-[#748071]">{motif.summary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="stats-closing-note py-2 text-center text-[#60745A]">
+        <div className="flex items-center justify-center gap-3">
+          <span aria-hidden="true" className="h-px w-10 bg-current opacity-30" />
+          <Leaf className="h-4 w-4" aria-hidden="true" />
+          <h4 className="font-serif text-base font-semibold">枯萎与新生</h4>
+          <span aria-hidden="true" className="h-px w-10 bg-current opacity-30" />
+        </div>
+        <p className="mx-auto mt-3 max-w-3xl font-serif text-sm leading-7">
+          两棵快要枯死的樟子松还立在那里，林荫路旁却长出了新的山杨幼苗。久未出现的鸭子，也在另一处河滩重新出现。森林里一直有事物离开，也一直有新的事物到来。
+        </p>
+      </section>
 
     </div>
   );
