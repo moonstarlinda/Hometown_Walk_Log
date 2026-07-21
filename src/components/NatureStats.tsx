@@ -4,7 +4,7 @@
  */
 
 import { WalkLog, Base } from '../types';
-import { Calendar, CloudSun, Footprints, Heart, Leaf, Route } from 'lucide-react';
+import { BookOpenText, Calendar, CalendarRange, CloudSun, Flame, Leaf, Route, TreePine } from 'lucide-react';
 import { PLANTS } from './PlantAtlas';
 
 interface NatureStatsProps {
@@ -16,112 +16,22 @@ interface NatureStatsProps {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const FOOTSTEP_LEVELS = 10;
-
 function parseDate(date: string) {
   const [year, month, day] = date.split('-').map(Number);
   return new Date(year, month - 1, day);
 }
 
-function formatDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${year}-${month}-${day}`;
+function compactDateLabel(date: string) {
+  return date ? date.slice(5).replace('-', '.') : '—';
 }
 
-function monthLabel(month: number) {
-  return `${month + 1}月`;
+function activityTreeClass(count: number) {
+  if (count <= 0) return 'text-[#DCE4D9]';
+  if (count === 1) return 'text-[#A5C99F]';
+  if (count === 2) return 'text-[#72AC70]';
+  return 'text-[#2F7A4F]';
 }
 
-function activityClass(count: number) {
-  if (count <= 0) return 'bg-[#EEF1EA] border-[#E1E7DC]';
-  if (count === 1) return 'bg-[#CFE6C8] border-[#BBDAB3]';
-  if (count === 2) return 'bg-[#92C68D] border-[#7FB775]';
-  return 'bg-[#2F7A4F] border-[#2F6C49]';
-}
-
-const IMPORTANT_WORD_POSITIONS = [
-  { x: 88, y: 52 },
-  { x: 232, y: 52 },
-  { x: 76, y: 132 },
-  { x: 232, y: 132 },
-  { x: 160, y: 34 }
-];
-
-const SECONDARY_WORD_POSITIONS = [
-  { x: 44, y: 88 },
-  { x: 276, y: 88 },
-  { x: 118, y: 154 },
-  { x: 204, y: 154 },
-  { x: 46, y: 30 },
-  { x: 278, y: 150 }
-];
-
-const WORD_CLOUD_COLORS: Record<string, string> = {
-  河水: '#2F7890',
-  黑猫: '#2E332D',
-  鸢尾花: '#75609B',
-  水文站: '#AFAF9E',
-  鸭子: '#627A42',
-  松树: '#2F5D4A',
-  丁香花: '#8A6FA3',
-  落叶松: '#6F7F4B',
-  河谷: '#4D8390',
-  沙洲: '#8B7A56',
-  长椅: '#766B4F',
-  毛毛虫: '#5E7D45',
-  石头: '#7E8B78',
-  云层: '#6E8E8C',
-  钓鱼人: '#5B7055',
-  帐篷: '#8A7B5A',
-  薄云: '#8EA39A',
-  霞光: '#9A7052'
-};
-
-const WORD_CLOUD_FALLBACK_COLORS = ['#2F5D4A', '#4D8390', '#7A693A', '#6B7E65', '#5B7055'];
-const HOCKNEY_WORD_CLOUD_COLORS: Record<string, string> = {
-  河水: '#137FBE',
-  黑猫: '#1F2E2C',
-  鸢尾花: '#7356B8',
-  水文站: '#F3FBF4',
-  鸭子: '#4B8F61',
-  松树: '#1F7B65',
-  丁香花: '#9168C8',
-  落叶松: '#6FA85D',
-  河谷: '#189FC2',
-  沙洲: '#6CB6A8',
-  长椅: '#4B8F83',
-  毛毛虫: '#49A75F',
-  石头: '#77A6A6',
-  云层: '#5EAED2',
-  钓鱼人: '#287C79',
-  帐篷: '#5DB3C4',
-  薄云: '#6DBED7',
-  霞光: '#3F9FB8'
-};
-const HOCKNEY_WORD_CLOUD_FALLBACK_COLORS = ['#137FBE', '#17A8B8', '#2AAE80', '#4AC4A4', '#587BC8'];
-const SANCTUARY_WORD_CLOUD_COLORS: Record<string, string> = {
-  河水: '#4BA3C3',
-  黑猫: '#4B4E6D',
-  鸢尾花: '#7A5C8C',
-  水文站: '#8A8D7A',
-  鸭子: '#4E8B5B',
-  松树: '#4E8B5B',
-  丁香花: '#7A5C8C',
-  落叶松: '#4E8B5B',
-  河谷: '#4BA3C3',
-  沙洲: '#A57845',
-  长椅: '#6A624C',
-  毛毛虫: '#4E8B5B',
-  石头: '#74766F',
-  云层: '#7D8492',
-  钓鱼人: '#4BA3C3',
-  帐篷: '#D98C3A',
-  薄云: '#9AA1A5',
-  霞光: '#D98C3A'
-};
-const SANCTUARY_WORD_CLOUD_FALLBACK_COLORS = ['#4BA3C3', '#4E8B5B', '#4B4E6D', '#D98C3A', '#7A5C8C'];
 const SANCTUARY_BASE_COLORS: Record<string, string> = {
   'base-1': '#4BA3C3',
   'base-2': '#4E8B5B',
@@ -130,20 +40,6 @@ const SANCTUARY_BASE_COLORS: Record<string, string> = {
   'base-5': '#7A5C8C',
   'base-6': '#8A7A45'
 };
-
-type WordCloudWord = {
-  word: string;
-  count: number;
-  tier: 'core' | 'important' | 'secondary';
-  x: number;
-  y: number;
-};
-
-function randomRotation(index: number, maxDegrees = 5) {
-  const seed = index * 137;
-  const normalized = ((seed % 1000) / 1000) * 2 - 1;
-  return normalized * maxDegrees;
-}
 
 function isDoubleTreeBenchBase(base: Base) {
   return /06号基地|双树长椅|雙樹長椅/.test(base.title);
@@ -180,97 +76,6 @@ export default function NatureStats({
     }
   });
 
-  const baseNatureConcepts = [
-    { label: '鸭子', terms: ['绿头鸭', '小鸭子', '鸭子', '鸭'] },
-    { label: '鸢尾花', terms: ['紫色鸢尾花', '野鸢尾', '鸢尾花', '鸢尾'] },
-    { label: '丁香花', terms: ['丁香花', '丁香'] },
-    { label: '沙洲', terms: ['小沙洲', '沙洲'] },
-    { label: '长椅', terms: ['双树长椅', '雙樹長椅', '松林长椅', '长椅'] },
-    { label: '水文站', terms: ['水文站', '水文测报站'] },
-    { label: '黑猫', terms: ['黑猫'] },
-    { label: '毛毛虫', terms: ['悬丝毛毛虫', '绿色毛毛虫', '棕色毛毛虫', '毛毛虫'] },
-    { label: '石头', terms: ['玉色石头', '白色石头', '小石头', '石子', '石头'] },
-    { label: '云层', terms: ['云分两层', '三层云', '云分层', '烟缕云', '云结构', '云层', '薄云', '白云', '乌云'] },
-    { label: '河水', terms: ['河水清澈', '水清澈', '安静看水', '玩水', '河水', '水流', '水面', '水浑'] },
-    { label: '钓鱼人', terms: ['钓鱼人'] },
-    { label: '帐篷', terms: ['白色帐篷', '彩色帐篷', '帐篷'] },
-    { label: '霞光', terms: ['霞光', '晚霞', '云霞', '黄昏'] },
-    { label: '森林', terms: ['林荫小路', '穿林打叶声', '森林海洋', '森林分层', '森林', '松林', '林中'] },
-    { label: '野餐', terms: ['野餐'] },
-    { label: '风', terms: ['风向变化', '风向东向西', '风大', '大风', '有风'] },
-    { label: '小鸟', terms: ['小鸟画弧', '小鸟'] },
-    ...PLANTS.map((plant) => ({ label: plant.name, terms: [plant.name] }))
-  ];
-
-  const knownNatureTerms = baseNatureConcepts.flatMap(({ terms }) => terms);
-  const naturalTagPattern = /河|水|云|雨|风|树|林|花|草|叶|果|鸟|鸭|猫|虫|石|沙|洲|霞|山|天|雾|雪|光/;
-  const discoveredTagConcepts = Array.from(
-    new Set(
-      logs
-        .flatMap((log) => log.tags)
-        .map((tag) => tag.trim())
-        .filter((tag) =>
-          tag.length >= 2 &&
-          tag.length <= 9 &&
-          naturalTagPattern.test(tag) &&
-          !knownNatureTerms.some((term) => tag.includes(term))
-        )
-    )
-  ).map((tag) => ({ label: tag, terms: [tag] }));
-  const natureConcepts = [...baseNatureConcepts, ...discoveredTagConcepts];
-
-  const wordSources = logs.map((log) => `${log.content}\n${log.tags.join('\n')}`);
-  const wordCounts: Record<string, number> = {};
-  natureConcepts.forEach(({ label, terms }) => {
-    let count = 0;
-    wordSources.forEach((source) => {
-      let remainingContent = source;
-      [...terms].sort((a, b) => b.length - a.length).forEach(term => {
-        const regex = new RegExp(term, 'g');
-        const matches = remainingContent.match(regex);
-        if (!matches) return;
-
-        count += matches.length;
-        remainingContent = remainingContent.replace(regex, '');
-      });
-    });
-    if (count > 0) {
-      wordCounts[label] = count;
-    }
-  });
-
-  const sortedWords = Object.entries(wordCounts).sort((a, b) => b[1] - a[1]);
-  const wordWhitelist = new Set(natureConcepts.map(({ label }) => label));
-  const eligibleWords = sortedWords.filter(
-    ([word]) => word.length >= 2 && wordWhitelist.has(word)
-  );
-  const coreWord = eligibleWords.slice(0, 1);
-  const surroundingWords = eligibleWords.slice(1);
-  const importantWords = surroundingWords.slice(0, 5);
-  const secondaryWords = surroundingWords.slice(5, 11);
-  const wordCloudWords: WordCloudWord[] = [
-    ...coreWord.map(([word, count]) => ({
-      word,
-      count,
-      tier: 'core' as const,
-      x: 160,
-      y: 92
-    })),
-    ...importantWords.map(([word, count], index) => ({
-      word,
-      count,
-      tier: 'important' as const,
-      ...IMPORTANT_WORD_POSITIONS[index]
-    })),
-    ...secondaryWords.map(([word, count], index) => ({
-      word,
-      count,
-      tier: 'secondary' as const,
-      ...SECONDARY_WORD_POSITIONS[index]
-    }))
-  ].slice(0, 12);
-  const maxWordCount = Math.max(wordCloudWords[0]?.count ?? 1, 1);
-
   const weatherLabels: Record<string, { label: string; color: string }> = {
     sunny: { label: '晴天', color: '#d97706' },
     cloudy: { label: '多云', color: '#4f8f68' },
@@ -288,43 +93,125 @@ export default function NatureStats({
       ...weatherLabels[weather]
     }));
 
-  let currentAngle = 0;
-  const radius = 48;
-  const cx = 64;
-  const cy = 64;
-  const circumference = 2 * Math.PI * radius;
-
   const logsByDate = logs.reduce<Record<string, number>>((counts, log) => {
     counts[log.date] = (counts[log.date] || 0) + 1;
     return counts;
   }, {});
 
-  const startDate = new Date(2026, 4, 1);
-  const endDate = new Date(2026, 11, 31);
-  const startOffset = startDate.getDay();
-  const calendarStart = new Date(startDate.getTime() - startOffset * DAY_MS);
-  const calendarDayCount = Math.ceil((endDate.getTime() - calendarStart.getTime() + DAY_MS) / DAY_MS / 7) * 7;
+  const recordDateKeys = Object.keys(logsByDate).sort();
+  const firstRecordKey = recordDateKeys[0] ?? '';
+  const latestRecordKey = recordDateKeys.at(-1) ?? '';
+  const archiveYear = Number((latestRecordKey || firstRecordKey || '2026').slice(0, 4));
+  const recordStartDate = firstRecordKey ? parseDate(firstRecordKey) : null;
+  const latestRecordDate = latestRecordKey ? parseDate(latestRecordKey) : null;
+  const recordSpanDays = recordStartDate && latestRecordDate
+    ? Math.floor((latestRecordDate.getTime() - recordStartDate.getTime()) / DAY_MS) + 1
+    : 0;
 
-  const calendarDays = Array.from({ length: calendarDayCount }, (_, index) => {
-    const date = new Date(calendarStart.getTime() + index * DAY_MS);
-    const key = formatDateKey(date);
-    const inRange = date >= startDate && date <= endDate;
-    return {
-      key,
-      date,
-      count: inRange ? logsByDate[key] ?? 0 : 0,
-      inRange
-    };
+  const timelineDays = recordStartDate
+    ? Array.from({ length: recordSpanDays }, (_, index) => {
+        const date = new Date(recordStartDate.getTime() + index * DAY_MS);
+        const key = `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}-${`${date.getDate()}`.padStart(2, '0')}`;
+        return { key, date, count: logsByDate[key] ?? 0 };
+      })
+    : [];
+
+  const timelineMonthMarkers = timelineDays
+    .map((day, index) => ({ day, index }))
+    .filter(({ day, index }) => index === 0 || day.date.getDate() === 1)
+    .map(({ day, index }) => ({
+      key: `${day.date.getFullYear()}-${day.date.getMonth() + 1}`,
+      label: `${day.date.getMonth() + 1}月`,
+      position: timelineDays.length > 1 ? (index / (timelineDays.length - 1)) * 100 : 0
+    }));
+
+  const timelineTickCandidates = timelineDays
+    .map((day, index) => ({ day, index }))
+    .filter(({ day, index }) => (
+      index === 0 ||
+      index === timelineDays.length - 1 ||
+      [1, 10, 20, 30].includes(day.date.getDate())
+    ))
+    .map(({ day, index }) => ({
+      key: day.key,
+      label: day.date.getDate(),
+      index,
+      isEndpoint: index === 0 || index === timelineDays.length - 1,
+      position: timelineDays.length > 1 ? (index / (timelineDays.length - 1)) * 100 : 0
+    }));
+  const timelineTickMarkers = timelineTickCandidates
+    .filter((marker) => (
+      marker.isEndpoint ||
+      !timelineTickCandidates.some((candidate) => (
+        candidate.isEndpoint && Math.abs(candidate.index - marker.index) <= 2
+      ))
+    ))
+    .map((marker, index, markers) => ({
+      ...marker,
+      row: index > 0 && marker.index - markers[index - 1].index <= 2 ? 1 : 0
+    }));
+
+  let busiestWeek = { start: '', end: '', count: 0 };
+  timelineDays.forEach((day, index) => {
+    const windowDays = timelineDays.slice(index, index + 7);
+    const count = windowDays.reduce((sum, item) => sum + item.count, 0);
+    if (count > busiestWeek.count && windowDays.length > 0) {
+      busiestWeek = {
+        start: day.key,
+        end: windowDays.at(-1)?.key ?? day.key,
+        count
+      };
+    }
   });
 
-  const monthMarkers = calendarDays
-    .filter((day) => day.inRange && day.date.getDate() === 1)
-    .map((day) => ({
-      key: day.key,
-      label: monthLabel(day.date.getMonth()),
-      column: Math.floor(calendarDays.findIndex((item) => item.key === day.key) / 7) + 1
-    }));
-  const calendarWeekCount = calendarDays.length / 7;
+  let longestStreak = 0;
+  let currentStreak = 0;
+  let previousActiveDate: Date | null = null;
+  recordDateKeys.forEach((key) => {
+    const date = parseDate(key);
+    currentStreak = previousActiveDate && date.getTime() - previousActiveDate.getTime() === DAY_MS
+      ? currentStreak + 1
+      : 1;
+    longestStreak = Math.max(longestStreak, currentStreak);
+    previousActiveDate = date;
+  });
+
+  const mostCommonWeather = [...weatherDataArray].sort((left, right) => right.count - left.count)[0];
+  const averageLogsPerWalkDay = recordDateKeys.length > 0 ? totalLogs / recordDateKeys.length : 0;
+
+  const recordCalendarMonths: Array<{
+    key: string;
+    label: string;
+    leadingDays: number;
+    days: Array<{ key: string; count: number; inRecordPeriod: boolean }>;
+  }> = [];
+
+  if (recordStartDate && latestRecordDate) {
+    const cursor = new Date(recordStartDate.getFullYear(), recordStartDate.getMonth(), 1);
+    const finalMonth = new Date(latestRecordDate.getFullYear(), latestRecordDate.getMonth(), 1);
+
+    while (cursor <= finalMonth) {
+      const year = cursor.getFullYear();
+      const month = cursor.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const key = `${year}-${`${month + 1}`.padStart(2, '0')}`;
+      recordCalendarMonths.push({
+        key,
+        label: `${year} 年 ${month + 1} 月`,
+        leadingDays: new Date(year, month, 1).getDay(),
+        days: Array.from({ length: daysInMonth }, (_, index) => {
+          const day = index + 1;
+          const dayKey = `${key}-${`${day}`.padStart(2, '0')}`;
+          return {
+            key: dayKey,
+            count: logsByDate[dayKey] ?? 0,
+            inRecordPeriod: dayKey >= firstRecordKey && dayKey <= latestRecordKey
+          };
+        })
+      });
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+  }
 
   // Calculate base statistics
   const logsPerBase = bases.map(base => ({
@@ -332,11 +219,71 @@ export default function NatureStats({
     count: logs.filter(log => log.baseId === base.id).length
   })).sort((a, b) => b.count - a.count);
 
+  const baseRhythms = logsPerBase.filter((base) => base.count > 0).map((base) => {
+    const weekCount = Math.max(1, Math.ceil(recordSpanDays / 7));
+    const weeklyCounts = Array.from({ length: weekCount }, () => 0);
+    logs.filter((log) => log.baseId === base.id).forEach((log) => {
+      if (!recordStartDate) return;
+      const weekIndex = Math.floor((parseDate(log.date).getTime() - recordStartDate.getTime()) / DAY_MS / 7);
+      if (weekIndex >= 0 && weekIndex < weeklyCounts.length) weeklyCounts[weekIndex] += 1;
+    });
+    const maxCount = Math.max(...weeklyCounts, 1);
+    const firstActiveWeek = weeklyCounts.findIndex((count) => count > 0);
+    let lastActiveWeek = weeklyCounts.length - 1;
+    while (lastActiveWeek > firstActiveWeek && weeklyCounts[lastActiveWeek] === 0) {
+      lastActiveWeek -= 1;
+    }
+    const activeWeeklyCounts = weeklyCounts.slice(firstActiveWeek, lastActiveWeek + 1);
+    let points = activeWeeklyCounts.map((count, localIndex) => {
+      const weekIndex = firstActiveWeek + localIndex;
+      const x = weeklyCounts.length > 1 ? (weekIndex / (weeklyCounts.length - 1)) * 180 : 90;
+      const y = 20 - (count / maxCount) * 14;
+      return `${x},${y}`;
+    }).join(' ');
+    if (activeWeeklyCounts.length === 1) {
+      const x = weeklyCounts.length > 1 ? (firstActiveWeek / (weeklyCounts.length - 1)) * 180 : 90;
+      const y = 20 - (activeWeeklyCounts[0] / maxCount) * 14;
+      points = `${Math.max(0, x - 2)},${y} ${Math.min(180, x + 2)},${y}`;
+    }
+    return { ...base, points };
+  });
+
   return (
-    <div className={isHockneySummer ? 'hockney-summer-page space-y-6' : 'space-y-6'}>
-      {/* 顶部：散步日历（全宽） */}
+    <div className={isHockneySummer ? 'stats-archive-page hockney-summer-page space-y-6' : 'stats-archive-page space-y-6'}>
       <section
-        className={`rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
+        className={`page-hero stats-archive-overview overflow-hidden rounded-2xl border border-[#DDE5D6] bg-[#F4F3E8] p-5 shadow-sm shadow-emerald-950/5 sm:p-6 ${
+          isHockneySummer
+            ? 'hockney-summer-panel'
+              : isHockney
+              ? 'hockney-card stats-archive-overview-artwork'
+              : isSanctuary
+                ? 'sanctuary-card stats-archive-overview-artwork'
+                : 'stats-archive-overview-artwork'
+        }`}
+      >
+        <div className="page-hero-copy stats-archive-overview-copy">
+          <div className="stats-archive-kicker inline-flex w-fit items-center gap-1.5 rounded-full border border-[#CED9C5] bg-white/55 px-3 py-1.5 text-xs text-[#667A5E]">
+            <Route className="h-3.5 w-3.5" /> 散步观察小结
+          </div>
+          <h1 className="page-hero-title mt-4 font-serif text-3xl font-semibold tracking-tight text-[#243C32] sm:text-4xl">这一季，走过的路</h1>
+          <p className="page-hero-description mt-3 font-serif text-sm text-[#61715F] sm:text-base">
+            {firstRecordKey ? `${firstRecordKey.replaceAll('-', '.')}—${compactDateLabel(latestRecordKey)} · 一个夏天的观察记录` : '等待第一篇散步日志。'}
+          </p>
+          {recordSpanDays > 0 && (
+            <p className="page-hero-support mt-3 text-sm text-[#5E705D] sm:text-base">
+              出门 <strong className="mx-1 font-serif text-xl text-[#2F5D4A]">{recordDateKeys.length}</strong>天
+              <span className="mx-2 text-[#A6B1A1]">·</span>写下
+              <strong className="mx-1 font-serif text-xl text-[#2F5D4A]">{totalLogs}</strong>篇日志
+              <span className="mx-2 text-[#A6B1A1]">·</span>认识
+              <strong className="mx-1 font-serif text-xl text-[#2F5D4A]">{PLANTS.length}</strong>种植物
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* 桌面端：连续观察时间带；移动端：按月松树日历 */}
+      <section
+        className={`stats-timeline-card rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
           isHockneySummer
             ? 'hockney-summer-panel'
             : isHockney
@@ -346,79 +293,124 @@ export default function NatureStats({
               : ''
         }`}
       >
-        <div className="mb-5">
+        <div className="mb-5 hidden md:block">
           <h2 className="flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
-            <Calendar className="h-5 w-5 text-[#5F7D58]" />
-            散步日历
+            <CalendarRange className="h-5 w-5 text-[#5F7D58]" />
+            {recordSpanDays} 天的观察时间带
           </h2>
-          <p className="mt-1 text-sm leading-6 text-[#6B7E65]">
-            记录那些走出家门、与河流、树林和天空相遇的日子。
-          </p>
         </div>
 
-        <div>
-          <div className="calendar-heatmap-scroll overflow-x-auto overscroll-x-contain pb-2">
-            <svg
-              viewBox="0 0 1100 215"
-              preserveAspectRatio="none"
-              className="block h-[215px] w-full min-w-[960px]"
-              role="img"
-              aria-label="2026年散步日志热力图"
-            >
-              {monthMarkers.map((marker) => {
-                const x = 42 + (marker.column - 1) * (1050 / calendarWeekCount);
-                return (
-                  <text key={marker.key} x={x} y="15" fill="#7D8C74" fontSize="12">
-                    {marker.label}
-                  </text>
-                );
-              })}
-              <text x="0" y="62" fill="#7D8C74" fontSize="12">一</text>
-              <text x="0" y="117" fill="#7D8C74" fontSize="12">三</text>
-              <text x="0" y="172" fill="#7D8C74" fontSize="12">五</text>
-              {calendarDays.map((day, index) => {
-                if (!day.inRange) return null;
-                const column = Math.floor(index / 7);
-                const row = index % 7;
-                const x = 42 + column * (1050 / calendarWeekCount) - 7;
-                const y = 30 + row * 27.5;
-                return (
-                  <g key={day.key} transform={`translate(${x} ${y})`}>
-                    <title>{`${day.key}: ${day.count} 篇日志`}</title>
-                    <path
-                      d="M7 1 L9 3 L8 3 L10 5 L9 5 L11 7 L3 7 L5 5 L4 5 L6 3 L5 3 Z M6 7 L6 10 L8 10 L8 7"
-                      transform="translate(-3.5 -2.5) scale(1.5)"
-                      fill={day.count === 0 ? '#EEF1EA' : day.count === 1 ? '#CFE6C8' : day.count === 2 ? '#92C68D' : '#2F7A4F'}
-                      stroke={day.count === 0 ? '#E1E7DC' : day.count === 1 ? '#BBDAB3' : day.count === 2 ? '#7FB775' : '#2F6C49'}
-                      strokeWidth="0.5"
+        <div className="hidden md:block">
+          {timelineDays.length > 0 ? (
+            <>
+              <div className="observation-timeline-months relative h-7" aria-hidden="true">
+                {timelineMonthMarkers.map((marker, index) => (
+                  <span
+                    key={marker.key}
+                    className="absolute whitespace-nowrap font-serif text-xs text-[#6F7E69]"
+                    style={{
+                      left: `${marker.position}%`,
+                      transform: index === 0 ? undefined : 'translateX(-50%)'
+                    }}
+                  >
+                    {index === 0 && recordStartDate?.getDate() !== 1 ? `${marker.label}（下旬）` : marker.label}
+                  </span>
+                ))}
+              </div>
+              <div className="observation-timeline-track relative pt-2">
+                <span className="observation-timeline-baseline absolute inset-x-0 bottom-1.5 h-px" aria-hidden="true" />
+                <div
+                  className="relative grid h-12 items-end gap-[2px]"
+                  style={{ gridTemplateColumns: `repeat(${timelineDays.length}, minmax(0, 1fr))` }}
+                >
+                  {timelineDays.map((day) => (
+                    <span
+                      key={day.key}
+                      role="img"
+                      data-count={Math.min(day.count, 3)}
+                      aria-label={`${day.key}，${day.count}篇日志`}
+                      title={`${day.key} · ${day.count} 篇日志`}
+                      className="observation-timeline-mark mx-auto w-full max-w-[6px] rounded-full"
+                      style={{ height: `${day.count === 0 ? 6 : 10 + Math.min(day.count, 3) * 6}px` }}
                     />
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
-          <div className="mt-3 flex items-center justify-center gap-2 text-xs text-[#7D8C74]">
-            <span>少</span>
-            {[0, 1, 2, 3].map((level) => (
-              <svg key={level} width="20" height="20" viewBox="0 0 14 14" className="overflow-visible">
-                <path
-                  d="M7 1 L9 3 L8 3 L10 5 L9 5 L11 7 L3 7 L5 5 L4 5 L6 3 L5 3 Z M6 7 L6 10 L8 10 L8 7"
-                  fill={level === 0 ? '#EEF1EA' : level === 1 ? '#CFE6C8' : level === 2 ? '#92C68D' : '#2F7A4F'}
-                  stroke={level === 0 ? '#E1E7DC' : level === 1 ? '#BBDAB3' : level === 2 ? '#7FB775' : '#2F6C49'}
-                  strokeWidth="0.5"
-                />
-              </svg>
-            ))}
-            <span>多</span>
-          </div>
+                  ))}
+                </div>
+              </div>
+              <div className="observation-timeline-ticks relative mt-1 h-8" aria-hidden="true">
+                {timelineTickMarkers.map((marker) => (
+                  <span
+                    key={marker.key}
+                    className={`observation-timeline-tick absolute text-[10px] tabular-nums text-[#788575] ${marker.isEndpoint ? 'font-semibold' : ''}`}
+                    style={{
+                      left: `${marker.position}%`,
+                      top: `${marker.row * 12}px`,
+                      transform: marker.position === 0
+                        ? 'translateX(0)'
+                        : marker.position === 100
+                          ? 'translateX(-100%)'
+                          : 'translateX(-50%)'
+                    }}
+                  >
+                    {marker.label}
+                  </span>
+                ))}
+              </div>
+              {busiestWeek.count > 0 && (
+                <p className="mt-2 flex items-center justify-center gap-2 text-xs text-[#66745E]">
+                  <Leaf className="h-4 w-4 text-[#5F7D58]" />
+                  最密集的一周：{compactDateLabel(busiestWeek.start)} 至 {compactDateLabel(busiestWeek.end)}，共记录 {busiestWeek.count} 次观察。
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="py-8 text-center text-sm text-[#7D8C74]">等待第一篇散步日志。</p>
+          )}
+        </div>
+
+        <div className="mb-5 md:hidden">
+          <h2 className="flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
+            <Calendar className="h-5 w-5 text-[#5F7D58]" />
+            {archiveYear} 散步日历
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:hidden">
+          {recordCalendarMonths.length > 0 ? recordCalendarMonths.map((month) => (
+            <section key={month.key} className="record-calendar-month rounded-lg border border-[#E2E7DD] bg-[#FAF9F1] p-3 sm:p-4">
+              <h3 className="font-serif text-sm font-semibold text-[#304438]">{month.label}</h3>
+              <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[9px] text-[#879181]" aria-hidden="true">
+                {['日', '一', '二', '三', '四', '五', '六'].map((weekday) => <span key={weekday}>{weekday}</span>)}
+              </div>
+              <div className="mt-1.5 grid grid-cols-7 gap-1">
+                {Array.from({ length: month.leadingDays }, (_, index) => <span key={`blank-${index}`} />)}
+                {month.days.map((day) => (
+                  <div
+                    key={day.key}
+                    role="img"
+                    data-in-record={day.inRecordPeriod ? 'true' : 'false'}
+                    data-count={Math.min(day.count, 3)}
+                    aria-label={day.inRecordPeriod ? `${day.key}，${day.count}篇日志` : `${day.key}，记录范围外`}
+                    title={day.inRecordPeriod ? `${day.key} · ${day.count} 篇日志` : `${day.key} · 记录范围外`}
+                    className={`flex aspect-square items-center justify-center ${
+                      day.inRecordPeriod ? activityTreeClass(day.count) : 'text-[#EBEEE8]'
+                    }`}
+                  >
+                    <TreePine aria-hidden="true" className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={1.7} />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )) : (
+            <p className="py-8 text-center text-sm text-[#7D8C74]">等待第一篇散步日志。</p>
+          )}
         </div>
       </section>
 
       {/* 底部：双列布局 */}
       <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2">
-        {/* 左侧列：散步纵览 */}
+        {/* 左侧列：反复走过的地方 */}
         <section
-        className={`flex h-full flex-col rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
+        className={`stats-places-card flex h-full flex-col rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
             isHockneySummer
               ? 'hockney-summer-panel'
               : isHockney
@@ -432,97 +424,53 @@ export default function NatureStats({
             <span className={`rounded-md p-1 ${isHockneySummer ? 'hockney-summer-heading-icon' : isSanctuary ? 'bg-[color-mix(in_srgb,#4E8B5B_12%,white)] text-[#4E8B5B]' : 'bg-[#EEF4E8] text-[#2F5D4A]'}`}>
               <Route className="h-4 w-4" />
             </span>
-            散步纵览
+            反复走过的地方
           </h3>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className={`rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] p-3 ${isHockneySummer ? 'hockney-summer-metric' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
-              <p className="font-mono text-[10px] text-[#7D8C74]">BASES</p>
-              <p className="mt-1 font-serif text-2xl font-semibold text-[#243C32]">
-                {bases.length} 个
-              </p>
-              <p className="mt-1 text-xs text-[#6B7E65]">标记基地</p>
-            </div>
-
-            <div className={`rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] p-3 ${isHockneySummer ? 'hockney-summer-metric' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
-              <p className="font-mono text-[10px] text-[#7D8C74]">JOURNALS</p>
-              <p className="mt-1 font-serif text-2xl font-semibold text-[#243C32]">
-                {totalLogs} 篇
-              </p>
-              <p className="mt-1 text-xs text-[#6B7E65]">观察日志</p>
-            </div>
-
-            <div className={`rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] p-3 ${isHockneySummer ? 'hockney-summer-metric' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
-              <p className="font-mono text-[10px] text-[#7D8C74]">PLANTS</p>
-              <p className="mt-1 font-serif text-2xl font-semibold text-[#243C32]">
-                {PLANTS.length} 种
-              </p>
-              <p className="mt-1 text-xs text-[#6B7E65]">植物收录</p>
-            </div>
-          </div>
-
-          <div className={`mt-4 flex flex-1 flex-col rounded-lg border border-[#DDE5D6] bg-[#F4F7ED] p-4 ${isHockneySummer ? 'hockney-summer-metric hockney-summer-metric-green' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
-            <p className="font-serif text-sm font-semibold text-[#2F5D4A]">
-              常去基地
-            </p>
-            <div className="mt-3 space-y-2.5">
-              {logsPerBase.slice(0, 3).filter(base => base.count > 0).map((base) => {
-                const maxBaseCount = Math.max(...logsPerBase.map(b => b.count), 1);
-                const activeFootsteps = Math.max(
-                  1,
-                  Math.ceil((base.count / maxBaseCount) * FOOTSTEP_LEVELS)
-                );
+          <div className={`flex flex-1 flex-col rounded-lg border border-[#DDE5D6] bg-[#F4F7ED] p-4 ${isHockneySummer ? 'hockney-summer-metric hockney-summer-metric-green' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
+            <div className="space-y-3">
+              {baseRhythms.map((base) => {
                 const baseColor = sanctuaryBaseColorForBase(base);
 
                 return (
                   <div
                     key={base.id}
-                    className="grid grid-cols-1 gap-1.5 sm:grid-cols-[minmax(8.5rem,9.75rem)_minmax(12rem,1fr)_2.25rem] sm:items-center sm:gap-1.5"
+                    className="base-rhythm-row grid grid-cols-[auto_minmax(7.5rem,10rem)_minmax(5rem,1fr)_2.5rem] items-center gap-2"
                   >
+                    <span
+                      className="h-2.5 w-2.5 rounded-full border-2 border-[#FFFDF7] bg-[#6D8D65] shadow-[0_0_0_1px_#8BA083]"
+                      style={isSanctuary && baseColor ? { backgroundColor: baseColor } : undefined}
+                      aria-hidden="true"
+                    />
                     <span
                       className="min-w-0 truncate text-xs font-medium text-[#66745E]"
                       style={isSanctuary && baseColor ? { color: baseColor } : undefined}
                     >
                       {base.title.replace(/^(\d)号基地 · /, '0$1号基地 · ')}
                     </span>
-                    <div
-                      className="flex min-w-0 items-center gap-2 text-[15px] leading-none sm:justify-between"
-                      aria-label={`${base.title} 相对访问频次 ${activeFootsteps}/${FOOTSTEP_LEVELS}`}
+                    <svg
+                      viewBox="0 0 180 24"
+                      preserveAspectRatio="none"
+                      className="h-6 w-full overflow-visible"
+                      role="img"
+                      aria-label={`${base.title} 在记录期间的每周访问节奏`}
                     >
-                      {Array.from({ length: FOOTSTEP_LEVELS }, (_, index) => (
-                        <Footprints
-                          key={index}
-                          aria-hidden="true"
-                          className={`h-4 w-4 shrink-0 ${
-                            index < activeFootsteps ? 'text-[#2F6C49]' : 'text-[#BFD1B8]/55'
-                          }`}
-                          style={
-                            isHockneySummer
-                              ? {
-                                  color:
-                                    index < activeFootsteps
-                                      ? '#0057D9'
-                                      : 'rgba(0, 87, 217, 0.18)'
-                                }
-                              : isSanctuary && baseColor
-                              ? {
-                                  color:
-                                    index < activeFootsteps
-                                      ? baseColor
-                                      : `color-mix(in srgb, ${baseColor} 16%, transparent)`
-                                }
-                              : undefined
-                          }
-                        />
-                      ))}
-                    </div>
+                      <polyline
+                        points={base.points}
+                        fill="none"
+                        stroke={isSanctuary && baseColor ? baseColor : 'currentColor'}
+                        strokeWidth="1.5"
+                        vectorEffect="non-scaling-stroke"
+                        className="base-rhythm-line text-[#72906B]"
+                      />
+                    </svg>
                     <span className="text-left text-xs font-medium text-[#4D6B50] sm:text-right">
                       {base.count}次
                     </span>
                   </div>
                 );
               })}
-              {logsPerBase.filter(base => base.count > 0).length === 0 && (
+              {baseRhythms.length === 0 && (
                 <p className="text-xs text-[#66745E]">暂无记录。</p>
               )}
             </div>
@@ -530,9 +478,9 @@ export default function NatureStats({
 
         </section>
 
-        {/* 右侧列：自然意象 */}
+        {/* 右侧列：这一季的节奏 */}
         <section
-        className={`flex h-full flex-col rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
+          className={`stats-season-card flex h-full flex-col rounded-xl border border-[#DDE5D6] bg-[#FFFDF7] p-5 shadow-sm shadow-emerald-950/5 ${
             isHockneySummer
               ? 'hockney-summer-panel'
               : isHockney
@@ -542,93 +490,35 @@ export default function NatureStats({
                 : ''
           }`}
         >
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
-              <span className={`rounded-md p-1 ${isHockneySummer ? 'hockney-summer-heading-icon' : isSanctuary ? 'bg-[color-mix(in_srgb,#7A5C8C_12%,white)] text-[#7A5C8C]' : 'bg-[#F4F0E3] text-[#7A693A]'}`}>
-                <Leaf className="h-4 w-4" />
-              </span>
-              自然意象
-            </h3>
-            <span className="text-[11px] text-[#879181]">基于当前 {totalLogs} 篇日志</span>
-          </div>
-
-          <div
-            className={`relative min-h-[14.5rem] flex-1 overflow-hidden rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] ${
-              isHockneySummer
-                ? 'hockney-summer-word-cloud'
-                : isHockney
-                ? 'hockney-card bg-[#E8FAFF]/55'
-                : isSanctuary
-                  ? 'sanctuary-card bg-[#FFF9EC]/70'
-                  : ''
-            }`}
-          >
-            {wordCloudWords.length > 0 ? (
-              <svg viewBox="0 0 320 180" className="w-full h-full">
-                <defs>
-                  <clipPath id="wordCloudClip">
-                    <rect x="0" y="0" width="320" height="180" />
-                  </clipPath>
-                </defs>
-                <g clipPath="url(#wordCloudClip)">
-                  {wordCloudWords.map(({ word, count, tier, x, y }, index) => {
-                    const ratio = Math.min(1, count / maxWordCount);
-                    const fontSize =
-                      tier === 'core'
-                        ? 34
-                        : tier === 'important'
-                          ? 18 + ratio * 6
-                          : 13 + ratio * 4;
-                    const color = isHockneySummer
-                      ? ['#0057D9', '#16A9D8', '#F338C8', '#14B85A', '#FF5A2D'][
-                          index % 5
-                        ]
-                      : isHockney
-                      ? HOCKNEY_WORD_CLOUD_COLORS[word] ??
-                        HOCKNEY_WORD_CLOUD_FALLBACK_COLORS[
-                          index % HOCKNEY_WORD_CLOUD_FALLBACK_COLORS.length
-                        ]
-                      : isSanctuary
-                        ? SANCTUARY_WORD_CLOUD_COLORS[word] ??
-                          SANCTUARY_WORD_CLOUD_FALLBACK_COLORS[
-                            index % SANCTUARY_WORD_CLOUD_FALLBACK_COLORS.length
-                          ]
-                        : WORD_CLOUD_COLORS[word] ??
-                          WORD_CLOUD_FALLBACK_COLORS[index % WORD_CLOUD_FALLBACK_COLORS.length];
-                    const rotation = tier === 'core' ? 0 : randomRotation(index, isHockney ? 8 : 5);
-                    const driftX = isHockney && tier !== 'core' ? ((index % 3) - 1) * 4 : 0;
-                    const driftY = isHockney && tier !== 'core' ? ((index % 2) ? 3 : -3) : 0;
-
-                    return (
-                      <text
-                        key={word}
-                        x={x + driftX}
-                        y={y + driftY}
-                        fontSize={fontSize}
-                        fontFamily="serif"
-                        fontWeight="600"
-                        fill={color}
-                        opacity={tier === 'core' ? 1 : 0.68 + ratio * 0.28}
-                        transform={`rotate(${rotation}, ${x + driftX}, ${y + driftY})`}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        title={`"${word}": 出现 ${count} 次`}
-                        className="cursor-default"
-                      >
-                        {word}
-                      </text>
-                    );
-                  })}
-                </g>
-              </svg>
-            ) : (
-              <div className="flex h-full items-center justify-center text-xs text-[#7D8C74]">
-                等待第一次散步观测。
-              </div>
-            )}
+          <h3 className="mb-4 flex items-center gap-2 font-serif text-base font-semibold text-[#243C32]">
+            <span className={`rounded-md p-1 ${isHockneySummer ? 'hockney-summer-heading-icon' : isSanctuary ? 'bg-[color-mix(in_srgb,#7A5C8C_12%,white)] text-[#7A5C8C]' : 'bg-[#F4F0E3] text-[#7A693A]'}`}>
+              <CalendarRange className="h-4 w-4" />
+            </span>
+            这一季的节奏
+          </h3>
+          <div className={`flex flex-1 flex-col justify-center rounded-lg border border-[#E5E1D6] bg-[#FAF9F1] px-4 ${isHockneySummer ? 'hockney-summer-metric' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card sanctuary-metric-card' : ''}`}>
+            <div className="season-rhythm-row grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-[#E4E6DC] py-4">
+              <BookOpenText className="h-6 w-6 text-[#69805E]" />
+              <span className="text-xs text-[#66745E]">平均每个散步日</span>
+              <strong className="text-right font-serif text-lg font-medium text-[#28483B]">
+                {averageLogsPerWalkDay > 0 ? averageLogsPerWalkDay.toFixed(1) : '—'}
+                {averageLogsPerWalkDay > 0 && <small className="ml-1 font-sans text-xs font-normal">篇</small>}
+              </strong>
+            </div>
+            <div className="season-rhythm-row grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-[#E4E6DC] py-4">
+              <CloudSun className="h-6 w-6 text-[#69805E]" />
+              <span className="text-xs text-[#66745E]">最常见天气</span>
+              <strong className="font-serif text-2xl font-medium text-[#28483B]">{mostCommonWeather?.label ?? '—'}</strong>
+            </div>
+            <div className="season-rhythm-row grid grid-cols-[auto_1fr_auto] items-center gap-3 py-4">
+              <Flame className="h-6 w-6 text-[#69805E]" />
+              <span className="text-xs text-[#66745E]">最长连续记录</span>
+              <strong className="font-serif text-2xl font-medium text-[#28483B]">{longestStreak}<small className="ml-1 font-sans text-xs font-normal">天</small></strong>
+            </div>
           </div>
         </section>
       </div>
+
     </div>
   );
 }

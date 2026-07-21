@@ -1238,24 +1238,24 @@ export default function App() {
         )}
 
         {activeTab === 'timeline' && (
-          <section className={`timeline-archive space-y-6 ${isHockneySummer ? 'hockney-summer-page' : ''}`}>
+          <section className={`timeline-archive space-y-6 ${isHockneySummer ? 'hockney-summer-page' : isHockney ? 'hockney-timeline' : isSanctuary ? 'sanctuary-timeline' : ''}`}>
             <section
-              className={`timeline-archive-hero relative overflow-hidden rounded-2xl border border-[#D8E0D1] bg-[#F4F1E5] px-5 py-7 shadow-sm shadow-emerald-950/5 sm:px-8 sm:py-8 ${
+              className={`page-hero timeline-archive-hero relative overflow-hidden rounded-2xl border border-[#D8E0D1] bg-[#F4F1E5] px-5 py-7 shadow-sm shadow-emerald-950/5 sm:px-8 sm:py-8 ${
                 isHockneySummer ? 'hockney-summer-panel' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
               }`}
             >
-              <div className="timeline-archive-hero-copy relative z-10 max-w-xl">
+              <div className="page-hero-copy timeline-archive-hero-copy relative z-10 max-w-xl">
                 <div className="timeline-archive-kicker inline-flex w-fit items-center gap-1.5 rounded-full border border-[#CED9C5] bg-white/55 px-3 py-1.5 text-xs text-[#667A5E]">
                   <BookOpen className="h-3.5 w-3.5" /> 沿日期翻阅
                 </div>
-                <h1 className="timeline-archive-title mt-4 font-serif text-3xl font-semibold tracking-tight text-[#243C32] sm:text-4xl">
+                <h1 className="page-hero-title timeline-archive-title mt-4 font-serif text-3xl font-semibold tracking-tight text-[#243C32] sm:text-4xl">
                   散步日志
                 </h1>
-                <p className="timeline-archive-description mt-3 max-w-lg text-sm leading-7 text-[#65735F] sm:text-base">
+                <p className="page-hero-description timeline-archive-description mt-3 max-w-lg text-sm leading-7 text-[#65735F] sm:text-base">
                   沿着日期翻阅走过的路。天气、草木与偶然停下来的时刻，都留在这些手记里。
                 </p>
                 {timelineArchive.firstDate && (
-                  <p className="timeline-archive-period mt-5 font-mono text-[11px] tracking-[0.08em] text-[#73806E]">
+                  <p className="page-hero-support timeline-archive-period mt-5 font-mono text-[11px] tracking-[0.08em] text-[#73806E]">
                     {formatDate(timelineArchive.firstDate)} — {formatDate(timelineArchive.latestDate)} · 家乡散步手记
                   </p>
                 )}
@@ -1428,7 +1428,7 @@ export default function App() {
                 ))}
               </div>
             ) : (
-              <div className={`rounded-2xl border border-dashed border-[#CCD8C7] bg-[#FFFDF7]/65 px-6 py-14 text-center ${isHockneySummer ? 'hockney-summer-panel' : ''}`}>
+              <div className={`timeline-empty-state rounded-2xl border border-dashed border-[#CCD8C7] bg-[#FFFDF7]/65 px-6 py-14 text-center ${isHockneySummer ? 'hockney-summer-panel' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''}`}>
                 <Search className="mx-auto h-7 w-7 text-[#91A08C]" />
                 <h2 className="mt-3 font-serif text-lg font-semibold text-[#344A3C]">没有找到相符的日志</h2>
                 <p className="mt-1 text-sm text-[#758271]">换一个关键词，或者清除当前筛选条件。</p>
@@ -2123,12 +2123,12 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
   const canEditBase = isEditing && base.id !== ROADSIDE_LOCATION_ID;
 
   return (
-    <section className={isHockneySummer ? 'hockney-summer-page space-y-3' : 'space-y-3'}>
+    <section className={isHockneySummer ? 'hockney-summer-page space-y-3' : isHockney ? 'hockney-base-detail space-y-3' : isSanctuary ? 'sanctuary-base-detail space-y-3' : 'space-y-3'}>
       <button
         type="button"
         onClick={onBack}
         className={`relative z-10 inline-flex items-center gap-1.5 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-1.5 text-xs font-medium text-[#5B7055] transition-colors hover:bg-[#EEF4E8] hover:text-[#2F5D4A] ${
-          isHockneySummer ? 'hockney-summer-back-button' : isSanctuary ? 'sanctuary-back-button' : ''
+          isHockneySummer ? 'hockney-summer-back-button' : isHockney ? 'hockney-back-button' : isSanctuary ? 'sanctuary-back-button' : ''
         }`}
         style={
           isSanctuary && palette
@@ -2151,7 +2151,7 @@ const BaseDetail: React.FC<BaseDetailProps> = ({
             type="button"
             onClick={onEditBase}
             className={`inline-flex items-center gap-1.5 rounded-lg border border-[#DDE5D6] bg-[#FFFDF7] px-3 py-1.5 text-xs font-medium text-[#5B7055] transition-colors hover:bg-[#EEF4E8] hover:text-[#2F5D4A] ${
-              isHockneySummer ? 'hockney-summer-back-button' : isSanctuary ? 'sanctuary-back-button' : ''
+              isHockneySummer ? 'hockney-summer-back-button' : isHockney ? 'hockney-back-button' : isSanctuary ? 'sanctuary-back-button' : ''
             }`}
           >
             <Pencil className="h-4 w-4" />
@@ -2339,7 +2339,7 @@ const LogCard: React.FC<LogCardProps> = ({
             <Calendar className="h-3.5 w-3.5" />
             {formatDate(log.date)}
           </span>
-          <span className={`inline-flex items-center gap-1 rounded-md bg-[#F4F0E3] px-2 py-1 text-[#6A6046] ${isHockneySummer ? 'hockney-summer-chip hockney-summer-chip-pink' : ''}`}>
+          <span className={`timeline-weather-chip inline-flex items-center gap-1 rounded-md bg-[#F4F0E3] px-2 py-1 text-[#6A6046] ${isHockneySummer ? 'hockney-summer-chip hockney-summer-chip-pink' : ''}`}>
             {getWeatherIcon(log.weather)}
             {log.weatherText}
           </span>
@@ -2347,7 +2347,7 @@ const LogCard: React.FC<LogCardProps> = ({
             <button
               type="button"
               onClick={onOpenBase}
-              className={`rounded-md bg-[#EEF4E8] px-2 py-1 text-[#4D6B50] transition-colors hover:bg-[#E1ECD9] ${
+              className={`timeline-base-chip rounded-md bg-[#EEF4E8] px-2 py-1 text-[#4D6B50] transition-colors hover:bg-[#E1ECD9] ${
                 isHockneySummer ? 'hockney-summer-chip hockney-summer-chip-green' : isSanctuary ? 'sanctuary-base-tag' : ''
               }`}
               style={
@@ -2365,7 +2365,7 @@ const LogCard: React.FC<LogCardProps> = ({
           )}
         </div>
       </div>
-      <p className={`whitespace-pre-line font-serif text-base leading-8 text-stone-800 ${isHockneySummer ? 'hockney-summer-log-text' : ''}`}>
+      <p className={`timeline-log-content whitespace-pre-line font-serif text-base leading-8 text-stone-800 ${isHockneySummer ? 'hockney-summer-log-text' : ''}`}>
         {log.content}
       </p>
       <LogPhotoGrid photos={photos} date={log.date} isHockney={isHockney} />
@@ -2373,7 +2373,7 @@ const LogCard: React.FC<LogCardProps> = ({
         {log.tags.map((tag) => (
           <span
             key={tag}
-            className={`rounded-md border border-transparent bg-[#EEF4E8] px-2 py-1 text-xs text-[#5B7055] ${isHockneySummer ? 'hockney-summer-tag' : ''}`}
+            className={`timeline-tag rounded-md border border-transparent bg-[#EEF4E8] px-2 py-1 text-xs text-[#5B7055] ${isHockneySummer ? 'hockney-summer-tag' : ''}`}
             style={
               isSanctuary && palette
                 ? {

@@ -37,27 +37,27 @@ export default function PlantAtlas({ isHockney, isHockneySummer, isSanctuary }: 
     id === 'all' ? PLANTS.length : PLANTS.filter((plant) => plant.category === id).length;
 
   return (
-    <section className={`plant-atlas space-y-6 ${isHockneySummer ? 'hockney-summer-atlas' : isSanctuary ? 'sanctuary-plant-atlas' : !isHockney ? 'default-plant-atlas' : ''}`}>
-      <div className={`plant-atlas-hero relative min-h-[250px] overflow-hidden rounded-2xl border border-[#D8E0D1] bg-[#F7F4E8] px-5 py-7 sm:min-h-[280px] sm:px-8 sm:py-8 lg:flex lg:items-center lg:py-6 ${
+    <section className={`plant-atlas space-y-6 ${isHockneySummer ? 'hockney-summer-atlas' : isHockney ? 'hockney-plant-atlas' : isSanctuary ? 'sanctuary-plant-atlas' : 'default-plant-atlas'}`}>
+      <div className={`page-hero plant-atlas-hero relative min-h-[250px] overflow-hidden rounded-2xl border border-[#D8E0D1] bg-[#F7F4E8] px-5 py-7 sm:min-h-[280px] sm:px-8 sm:py-8 lg:flex lg:items-center lg:py-6 ${
         isHockneySummer ? 'hockney-summer-panel' : isHockney ? 'hockney-card' : isSanctuary ? 'sanctuary-card' : ''
       }`}>
         <div
           aria-hidden="true"
           className="plant-atlas-artwork pointer-events-none absolute inset-0 block select-none"
         />
-        <div className="relative z-10 flex max-w-xl flex-col justify-center sm:max-w-[58%] lg:max-w-[46%]">
+        <div className="page-hero-copy relative z-10 flex max-w-xl flex-col justify-center sm:max-w-[58%] lg:max-w-[46%]">
             <div className="plant-atlas-kicker mb-4 inline-flex w-fit max-w-max self-start items-center gap-1.5 whitespace-nowrap rounded-full border border-[#CED9C5] bg-white/55 px-2.5 py-1 text-xs text-[#667A5E] lg:mb-3">
               <Leaf className="h-3.5 w-3.5" />
               散步中的草木相遇
             </div>
-            <h1 className="plant-atlas-title font-serif text-3xl font-semibold tracking-tight text-[#243C32] sm:text-4xl">植物图鉴</h1>
-            <p className="plant-atlas-description mt-3 max-w-xl text-sm leading-7 text-[#687761] sm:text-base lg:mt-2 lg:leading-6">
+            <h1 className="page-hero-title plant-atlas-title font-serif text-3xl font-semibold tracking-tight text-[#243C32] sm:text-4xl">植物图鉴</h1>
+            <p className="page-hero-description plant-atlas-description mt-3 max-w-xl text-sm leading-7 text-[#687761] sm:text-base lg:mt-2 lg:leading-6">
               我在日常散步中见过的树、花与草木。比起准确地命名，这里更想保存每一次认真看见。
             </p>
             <p className="plant-atlas-ai-note mt-2 text-xs text-[#879181] lg:mt-1.5">
               （植物种类由 AI 辅助识别）
             </p>
-            <div className="plant-atlas-count mt-6 flex items-baseline gap-2 text-[#2F5D4A] lg:mt-4">
+            <div className="page-hero-support plant-atlas-count mt-6 flex items-baseline gap-2 text-[#2F5D4A] lg:mt-4">
               <strong className="font-serif text-4xl font-semibold">{PLANTS.length}</strong>
               <span className="text-sm">种植物已收录</span>
             </div>

@@ -108,5 +108,12 @@ export const PLANTS: Plant[] = [
    },
    {id: 36, name: '白芷', category: 'herb', firstSeen: '2026.07.19',
     image: '/images/plants/angelica_sinensis.jpg'
+   },
+   {id: 37, name: '阿尔泰狗娃花', category: 'herb', firstSeen: '2026.07.20',
+    image: '/images/plants/altai_dog_flower.jpg'
+   },
+   { id:38, name: '山杨树幼苗', category: 'tree', firstSeen: '2026.07.21',
+    image: '/images/plants/populus_tomentosa.jpg'
    }
+
 ];
