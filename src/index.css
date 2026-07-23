@@ -3429,7 +3429,13 @@ g:hover .hockney-summer-map-marker {
 
 .hockney-summer-page .motif-summary-panorama {
   background:
-    linear-gradient(110deg, #16a9d8 0 24%, #fff22e 24% 50%, #14b85a 50% 73%, #f338c8 73% 100%);
+    linear-gradient(
+      110deg,
+      color-mix(in srgb, #16a9d8 38%, white) 0 21%,
+      color-mix(in srgb, #fff22e 42%, white) 27% 47%,
+      color-mix(in srgb, #14b85a 36%, white) 53% 70%,
+      color-mix(in srgb, #f338c8 34%, white) 76% 100%
+    );
 }
 
 .hockney-summer-page .motif-summary-card h4,
